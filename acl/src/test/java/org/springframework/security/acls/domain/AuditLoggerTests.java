@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -44,7 +44,7 @@ public class AuditLoggerTests {
 	// ========================================================================================================
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		logger = new ConsoleAuditLogger();
 		ace = mock(AuditableAccessControlEntry.class);
 		console = System.out;
@@ -52,7 +52,7 @@ public class AuditLoggerTests {
 	}
 
 	@After
-	public void tearDown() throws Exception {
+	public void tearDown() {
 		System.setOut(console);
 		bytes.reset();
 	}
@@ -61,35 +61,35 @@ public class AuditLoggerTests {
 	public void nonAuditableAceIsIgnored() {
 		AccessControlEntry ace = mock(AccessControlEntry.class);
 		logger.logIfNeeded(true, ace);
-		assertThat(bytes.size()).isEqualTo(0);
+		assertThat(bytes.size()).isZero();
 	}
 
 	@Test
-	public void successIsNotLoggedIfAceDoesntRequireSuccessAudit() throws Exception {
+	public void successIsNotLoggedIfAceDoesntRequireSuccessAudit() {
 		when(ace.isAuditSuccess()).thenReturn(false);
 		logger.logIfNeeded(true, ace);
-		assertThat(bytes.size()).isEqualTo(0);
+		assertThat(bytes.size()).isZero();
 	}
 
 	@Test
-	public void successIsLoggedIfAceRequiresSuccessAudit() throws Exception {
+	public void successIsLoggedIfAceRequiresSuccessAudit() {
 		when(ace.isAuditSuccess()).thenReturn(true);
 
 		logger.logIfNeeded(true, ace);
-		assertThat(bytes.toString().startsWith("GRANTED due to ACE")).isTrue();
+		assertThat(bytes.toString()).startsWith("GRANTED due to ACE");
 	}
 
 	@Test
-	public void failureIsntLoggedIfAceDoesntRequireFailureAudit() throws Exception {
+	public void failureIsntLoggedIfAceDoesntRequireFailureAudit() {
 		when(ace.isAuditFailure()).thenReturn(false);
 		logger.logIfNeeded(false, ace);
-		assertThat(bytes.size()).isEqualTo(0);
+		assertThat(bytes.size()).isZero();
 	}
 
 	@Test
-	public void failureIsLoggedIfAceRequiresFailureAudit() throws Exception {
+	public void failureIsLoggedIfAceRequiresFailureAudit() {
 		when(ace.isAuditFailure()).thenReturn(true);
 		logger.logIfNeeded(false, ace);
-		assertThat(bytes.toString().startsWith("DENIED due to ACE")).isTrue();
+		assertThat(bytes.toString()).startsWith("DENIED due to ACE");
 	}
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,7 +32,7 @@ public class DataSourcePopulator implements InitializingBean {
 
 	JdbcTemplate template;
 
-	public void afterPropertiesSet() throws Exception {
+	public void afterPropertiesSet() {
 		Assert.notNull(template, "dataSource required");
 
 		template.execute("CREATE TABLE USERS(USERNAME VARCHAR_IGNORECASE(50) NOT NULL PRIMARY KEY,PASSWORD VARCHAR_IGNORECASE(500) NOT NULL,ENABLED BOOLEAN NOT NULL);");
@@ -46,13 +46,13 @@ public class DataSourcePopulator implements InitializingBean {
 		 * is disabled) Encoded password for bill is "wombat" Encoded password for bob is
 		 * "wombat" Encoded password for jane is "wombat"
 		 */
-		template.execute("INSERT INTO USERS VALUES('rod','koala',TRUE);");
-		template.execute("INSERT INTO USERS VALUES('dianne','65d15fe9156f9c4bbffd98085992a44e',TRUE);");
-		template.execute("INSERT INTO USERS VALUES('scott','2b58af6dddbd072ed27ffc86725d7d3a',TRUE);");
-		template.execute("INSERT INTO USERS VALUES('peter','22b5c9accc6e1ba628cedc63a72d57f8',FALSE);");
-		template.execute("INSERT INTO USERS VALUES('bill','2b58af6dddbd072ed27ffc86725d7d3a',TRUE);");
-		template.execute("INSERT INTO USERS VALUES('bob','2b58af6dddbd072ed27ffc86725d7d3a',TRUE);");
-		template.execute("INSERT INTO USERS VALUES('jane','2b58af6dddbd072ed27ffc86725d7d3a',TRUE);");
+		template.execute("INSERT INTO USERS VALUES('rod','{noop}koala',TRUE);");
+		template.execute("INSERT INTO USERS VALUES('dianne','{MD5}65d15fe9156f9c4bbffd98085992a44e',TRUE);");
+		template.execute("INSERT INTO USERS VALUES('scott','{MD5}2b58af6dddbd072ed27ffc86725d7d3a',TRUE);");
+		template.execute("INSERT INTO USERS VALUES('peter','{MD5}22b5c9accc6e1ba628cedc63a72d57f8',FALSE);");
+		template.execute("INSERT INTO USERS VALUES('bill','{MD5}2b58af6dddbd072ed27ffc86725d7d3a',TRUE);");
+		template.execute("INSERT INTO USERS VALUES('bob','{MD5}2b58af6dddbd072ed27ffc86725d7d3a',TRUE);");
+		template.execute("INSERT INTO USERS VALUES('jane','{MD5}2b58af6dddbd072ed27ffc86725d7d3a',TRUE);");
 		template.execute("INSERT INTO AUTHORITIES VALUES('rod','ROLE_USER');");
 		template.execute("INSERT INTO AUTHORITIES VALUES('rod','ROLE_SUPERVISOR');");
 		template.execute("INSERT INTO AUTHORITIES VALUES('dianne','ROLE_USER');");

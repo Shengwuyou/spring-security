@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ import java.util.ArrayList;
 
 import org.jasig.cas.client.validation.Assertion;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.SpringSecurityCoreVersion;
 
 /**
@@ -37,7 +36,7 @@ public final class CasAssertionAuthenticationToken extends AbstractAuthenticatio
 	private final String ticket;
 
 	public CasAssertionAuthenticationToken(final Assertion assertion, final String ticket) {
-		super(new ArrayList<GrantedAuthority>());
+		super(new ArrayList<>());
 
 		this.assertion = assertion;
 		this.ticket = ticket;

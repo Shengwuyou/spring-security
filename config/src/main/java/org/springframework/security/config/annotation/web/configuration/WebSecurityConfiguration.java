@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,12 @@ package org.springframework.security.config.annotation.web.configuration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.Filter;
 
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,10 +40,13 @@ import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.SecurityConfigurer;
 import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
+import org.springframework.security.config.crypto.RsaKeyConversionServicePostProcessor;
 import org.springframework.security.context.DelegatingApplicationListener;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.FilterInvocation;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.WebInvocationPrivilegeEvaluator;
+import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 
 
@@ -62,13 +65,15 @@ import org.springframework.security.web.context.AbstractSecurityWebApplicationIn
  * @author Keesun Baik
  * @since 3.2
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAware {
 	private WebSecurity webSecurity;
 
 	private Boolean debugEnabled;
 
 	private List<SecurityConfigurer<Filter, WebSecurity>> webSecurityConfigurers;
+
+	private List<SecurityFilterChain> securityFilterChains = Collections.emptyList();
 
 	private ClassLoader beanClassLoader;
 
@@ -88,18 +93,33 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 
 	/**
 	 * Creates the Spring Security Filter Chain
-	 * @return
+	 * @return the {@link Filter} that represents the security filter chain
 	 * @throws Exception
 	 */
 	@Bean(name = AbstractSecurityWebApplicationInitializer.DEFAULT_FILTER_NAME)
 	public Filter springSecurityFilterChain() throws Exception {
 		boolean hasConfigurers = webSecurityConfigurers != null
 				&& !webSecurityConfigurers.isEmpty();
-		if (!hasConfigurers) {
+		boolean hasFilterChain = !securityFilterChains.isEmpty();
+		if (hasConfigurers && hasFilterChain) {
+			throw new IllegalStateException(
+					"Found WebSecurityConfigurerAdapter as well as SecurityFilterChain." +
+							"Please select just one.");
+		}
+		if (!hasConfigurers && !hasFilterChain) {
 			WebSecurityConfigurerAdapter adapter = objectObjectPostProcessor
 					.postProcess(new WebSecurityConfigurerAdapter() {
 					});
 			webSecurity.apply(adapter);
+		}
+		for (SecurityFilterChain securityFilterChain : securityFilterChains) {
+			webSecurity.addSecurityFilterChainBuilder(() -> securityFilterChain);
+			for (Filter filter : securityFilterChain.getFilters()) {
+				if (filter instanceof FilterSecurityInterceptor) {
+					webSecurity.securityInterceptor((FilterSecurityInterceptor) filter);
+					break;
+				}
+			}
 		}
 		return webSecurity.build();
 	}
@@ -108,11 +128,10 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 	 * Creates the {@link WebInvocationPrivilegeEvaluator} that is necessary for the JSP
 	 * tag support.
 	 * @return the {@link WebInvocationPrivilegeEvaluator}
-	 * @throws Exception
 	 */
 	@Bean
 	@DependsOn(AbstractSecurityWebApplicationInitializer.DEFAULT_FILTER_NAME)
-	public WebInvocationPrivilegeEvaluator privilegeEvaluator() throws Exception {
+	public WebInvocationPrivilegeEvaluator privilegeEvaluator() {
 		return webSecurity.getPrivilegeEvaluator();
 	}
 
@@ -138,7 +157,7 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 			webSecurity.debug(debugEnabled);
 		}
 
-		Collections.sort(webSecurityConfigurers, AnnotationAwareOrderComparator.INSTANCE);
+		webSecurityConfigurers.sort(AnnotationAwareOrderComparator.INSTANCE);
 
 		Integer previousOrder = null;
 		Object previousConfig = null;
@@ -157,6 +176,17 @@ public class WebSecurityConfiguration implements ImportAware, BeanClassLoaderAwa
 			webSecurity.apply(webSecurityConfigurer);
 		}
 		this.webSecurityConfigurers = webSecurityConfigurers;
+	}
+
+	@Autowired(required = false)
+	void setFilterChains(List<SecurityFilterChain> securityFilterChains) {
+		securityFilterChains.sort(AnnotationAwareOrderComparator.INSTANCE);
+		this.securityFilterChains = securityFilterChains;
+	}
+
+	@Bean
+	public static BeanFactoryPostProcessor conversionServicePostProcessor() {
+		return new RsaKeyConversionServicePostProcessor();
 	}
 
 	@Bean

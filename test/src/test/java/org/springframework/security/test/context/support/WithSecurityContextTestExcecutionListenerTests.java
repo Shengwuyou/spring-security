@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -75,7 +75,6 @@ public class WithSecurityContextTestExcecutionListenerTests {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void beforeTestMethodNullSecurityContextNoError() throws Exception {
 		Class testClass = FakeTest.class;
-		when(testContext.getApplicationContext()).thenReturn(context);
 		when(testContext.getTestClass()).thenReturn(testClass);
 		when(testContext.getTestMethod()).thenReturn(
 				ReflectionUtils.findMethod(testClass, "testNoAnnotation"));
@@ -88,7 +87,6 @@ public class WithSecurityContextTestExcecutionListenerTests {
 	public void beforeTestMethodNoApplicationContext() throws Exception {
 		Class testClass = FakeTest.class;
 		when(testContext.getApplicationContext()).thenThrow(new IllegalStateException());
-		when(testContext.getTestClass()).thenReturn(testClass);
 		when(testContext.getTestMethod()).thenReturn(
 				ReflectionUtils.findMethod(testClass, "testWithMockUser"));
 
@@ -103,7 +101,7 @@ public class WithSecurityContextTestExcecutionListenerTests {
 		SqlScriptsTestExecutionListener sql = new SqlScriptsTestExecutionListener();
 		WithSecurityContextTestExecutionListener security = new WithSecurityContextTestExecutionListener();
 
-		List<? extends TestExecutionListener> listeners = Arrays.asList(security, sql);
+		List<TestExecutionListener> listeners = Arrays.asList(security, sql);
 
 		AnnotationAwareOrderComparator.sort(listeners);
 
@@ -116,7 +114,7 @@ public class WithSecurityContextTestExcecutionListenerTests {
 		AbstractTestExecutionListener otherListener = new AbstractTestExecutionListener() {
 		};
 
-		List<TestExecutionListener> listeners = new ArrayList<TestExecutionListener>();
+		List<TestExecutionListener> listeners = new ArrayList<>();
 		listeners.add(otherListener);
 		listeners.add(this.listener);
 

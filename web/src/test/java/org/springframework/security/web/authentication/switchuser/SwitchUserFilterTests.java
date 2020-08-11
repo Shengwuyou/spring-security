@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,16 @@
 
 package org.springframework.security.web.authentication.switchuser;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import java.util.ArrayList;
+import java.util.List;
+import javax.servlet.FilterChain;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.AccountExpiredException;
@@ -40,9 +45,12 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.util.FieldUtils;
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 
-import javax.servlet.FilterChain;
-import java.util.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests
@@ -74,6 +82,7 @@ public class SwitchUserFilterTests {
 		request.setScheme("http");
 		request.setServerName("localhost");
 		request.setRequestURI("/login/impersonate");
+		request.setMethod("POST");
 
 		return request;
 	}
@@ -113,6 +122,43 @@ public class SwitchUserFilterTests {
 	}
 
 	@Test
+	// gh-4249
+	public void requiresExitUserWhenEndsWithThenDoesNotMatch() {
+		SwitchUserFilter filter = new SwitchUserFilter();
+		filter.setExitUserUrl("/j_spring_security_my_exit_user");
+
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/foo/bar/j_spring_security_my_exit_user");
+
+		assertThat(filter.requiresExitUser(request)).isFalse();
+	}
+
+	@Test
+	// gh-4183
+	public void requiresExitUserWhenGetThenDoesNotMatch() {
+		SwitchUserFilter filter = new SwitchUserFilter();
+
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setScheme("http");
+		request.setServerName("localhost");
+		request.setRequestURI("/login/impersonate");
+		request.setMethod("GET");
+
+		assertThat(filter.requiresExitUser(request)).isFalse();
+	}
+
+	@Test
+	public void requiresExitUserWhenMatcherThenWorks() {
+		SwitchUserFilter filter = new SwitchUserFilter();
+		filter.setExitUserMatcher(AnyRequestMatcher.INSTANCE);
+
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/foo/bar/j_spring_security_my_exit_user");
+
+		assertThat(filter.requiresExitUser(request)).isTrue();
+	}
+
+	@Test
 	public void requiresSwitchMatchesCorrectly() {
 		SwitchUserFilter filter = new SwitchUserFilter();
 		filter.setSwitchUserUrl("/j_spring_security_my_switch_user");
@@ -123,8 +169,45 @@ public class SwitchUserFilterTests {
 		assertThat(filter.requiresSwitchUser(request)).isTrue();
 	}
 
+	@Test
+	// gh-4249
+	public void requiresSwitchUserWhenEndsWithThenDoesNotMatch() {
+		SwitchUserFilter filter = new SwitchUserFilter();
+		filter.setSwitchUserUrl("/j_spring_security_my_exit_user");
+
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/foo/bar/j_spring_security_my_exit_user");
+
+		assertThat(filter.requiresSwitchUser(request)).isFalse();
+	}
+
+	@Test
+	// gh-4183
+	public void requiresSwitchUserWhenGetThenDoesNotMatch() {
+		SwitchUserFilter filter = new SwitchUserFilter();
+
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setScheme("http");
+		request.setServerName("localhost");
+		request.setRequestURI("/login/impersonate");
+		request.setMethod("GET");
+
+		assertThat(filter.requiresSwitchUser(request)).isFalse();
+	}
+
+	@Test
+	public void requiresSwitchUserWhenMatcherThenWorks() {
+		SwitchUserFilter filter = new SwitchUserFilter();
+		filter.setSwitchUserMatcher(AnyRequestMatcher.INSTANCE);
+
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/foo/bar/j_spring_security_my_exit_user");
+
+		assertThat(filter.requiresSwitchUser(request)).isTrue();
+	}
+
 	@Test(expected = UsernameNotFoundException.class)
-	public void attemptSwitchToUnknownUserFails() throws Exception {
+	public void attemptSwitchToUnknownUserFails() {
 
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.addParameter(SwitchUserFilter.SPRING_SECURITY_SWITCH_USERNAME_KEY,
@@ -136,27 +219,27 @@ public class SwitchUserFilterTests {
 	}
 
 	@Test(expected = DisabledException.class)
-	public void attemptSwitchToUserThatIsDisabledFails() throws Exception {
+	public void attemptSwitchToUserThatIsDisabledFails() {
 		switchToUser("mcgarrett");
 	}
 
 	@Test(expected = AccountExpiredException.class)
-	public void attemptSwitchToUserWithAccountExpiredFails() throws Exception {
+	public void attemptSwitchToUserWithAccountExpiredFails() {
 		switchToUser("wofat");
 	}
 
 	@Test(expected = CredentialsExpiredException.class)
-	public void attemptSwitchToUserWithExpiredCredentialsFails() throws Exception {
+	public void attemptSwitchToUserWithExpiredCredentialsFails() {
 		switchToUser("steve");
 	}
 
 	@Test(expected = UsernameNotFoundException.class)
-	public void switchUserWithNullUsernameThrowsException() throws Exception {
+	public void switchUserWithNullUsernameThrowsException() {
 		switchToUser(null);
 	}
 
 	@Test
-	public void attemptSwitchUserIsSuccessfulWithValidUser() throws Exception {
+	public void attemptSwitchUserIsSuccessfulWithValidUser() {
 		assertThat(switchToUser("jacklord")).isNotNull();
 	}
 
@@ -198,7 +281,7 @@ public class SwitchUserFilterTests {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void configMissingUserDetailsServiceFails() throws Exception {
+	public void configMissingUserDetailsServiceFails() {
 		SwitchUserFilter filter = new SwitchUserFilter();
 		filter.setSwitchUserUrl("/login/impersonate");
 		filter.setExitUserUrl("/logout/impersonate");
@@ -207,7 +290,7 @@ public class SwitchUserFilterTests {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testBadConfigMissingTargetUrl() throws Exception {
+	public void testBadConfigMissingTargetUrl() {
 		SwitchUserFilter filter = new SwitchUserFilter();
 		filter.setUserDetailsService(new MockUserDetailsService());
 		filter.setSwitchUserUrl("/login/impersonate");
@@ -218,6 +301,7 @@ public class SwitchUserFilterTests {
 	@Test
 	public void defaultProcessesFilterUrlMatchesUrlWithPathParameter() {
 		MockHttpServletRequest request = createMockSwitchRequest();
+		request.setContextPath("/webapp");
 		SwitchUserFilter filter = new SwitchUserFilter();
 		filter.setSwitchUserUrl("/login/impersonate");
 
@@ -232,7 +316,7 @@ public class SwitchUserFilterTests {
 				"dano", "hawaii50", ROLES_12);
 
 		// set current user (Admin)
-		List<GrantedAuthority> adminAuths = new ArrayList<GrantedAuthority>();
+		List<GrantedAuthority> adminAuths = new ArrayList<>();
 		adminAuths.addAll(ROLES_12);
 		adminAuths.add(new SwitchUserGrantedAuthority("PREVIOUS_ADMINISTRATOR", source));
 		UsernamePasswordAuthenticationToken admin = new UsernamePasswordAuthenticationToken(
@@ -351,6 +435,7 @@ public class SwitchUserFilterTests {
 		// http request
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.setRequestURI("/webapp/login/impersonate");
+		request.setContextPath("/webapp");
 		request.addParameter(SwitchUserFilter.SPRING_SECURITY_SWITCH_USERNAME_KEY,
 				"jacklord");
 
@@ -390,14 +475,10 @@ public class SwitchUserFilterTests {
 
 		SwitchUserFilter filter = new SwitchUserFilter();
 		filter.setUserDetailsService(new MockUserDetailsService());
-		filter.setSwitchUserAuthorityChanger(new SwitchUserAuthorityChanger() {
-			public Collection<GrantedAuthority> modifyGrantedAuthorities(
-					UserDetails targetUser, Authentication currentAuthentication,
-					Collection<? extends GrantedAuthority> authoritiesToBeGranted) {
-				List<GrantedAuthority> auths = new ArrayList<GrantedAuthority>();
-				auths.add(new SimpleGrantedAuthority("ROLE_NEW"));
-				return auths;
-			}
+		filter.setSwitchUserAuthorityChanger((targetUser, currentAuthentication, authoritiesToBeGranted) -> {
+			List<GrantedAuthority> auths = new ArrayList<>();
+			auths.add(new SimpleGrantedAuthority("ROLE_NEW"));
+			return auths;
 		});
 
 		Authentication result = filter.attemptSwitchUser(request);
@@ -409,7 +490,7 @@ public class SwitchUserFilterTests {
 
 	// SEC-1763
 	@Test
-	public void nestedSwitchesAreNotAllowed() throws Exception {
+	public void nestedSwitchesAreNotAllowed() {
 		// original user
 		UsernamePasswordAuthenticationToken source = new UsernamePasswordAuthenticationToken(
 				"orig", "hawaii50", ROLES_12);
@@ -432,7 +513,7 @@ public class SwitchUserFilterTests {
 
 	// gh-3697
 	@Test
-	public void switchAuthorityRoleCannotBeNull() throws Exception {
+	public void switchAuthorityRoleCannotBeNull() {
 		thrown.expect(IllegalArgumentException.class);
 		thrown.expectMessage("switchAuthorityRole cannot be null");
 		switchToUserWithAuthorityRole("dano", null);
@@ -440,7 +521,7 @@ public class SwitchUserFilterTests {
 
 	// gh-3697
 	@Test
-	public void switchAuthorityRoleCanBeChanged() throws Exception {
+	public void switchAuthorityRoleCanBeChanged() {
 		String switchAuthorityRole = "PREVIOUS_ADMINISTRATOR";
 
 		// original user

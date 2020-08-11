@@ -1,14 +1,14 @@
 <%@ taglib prefix='c' uri='http://java.sun.com/jsp/jstl/core' %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"   "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>OpenID Login</title>
 
     <!-- Simple OpenID Selector -->
     <link rel="stylesheet" href="<c:url value='/css/openid.css'/>" />
-    <script type="text/javascript" src="<c:url value='/js/jquery-1.2.6.min.js'/>"></script>
+    <script type="text/javascript" src="<c:url value='/js/jquery-3.5.1.min.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/js/openid-jquery.js'/>"></script>
 
     <script type="text/javascript">
@@ -28,6 +28,12 @@
 </head>
 
 <body>
+
+<p><strong>
+NOTE: The OpenID 1.0 and 2.0 protocols have been deprecated and users are
+<a href="https://openid.net/specs/openid-connect-migration-1_0.html">encouraged to migrate</a>
+to <a href="https://openid.net/connect/">OpenID Connect</a>, which is supported by <code>spring-security-oauth2</code>.
+</strong></p>
 
 <c:if test="${not empty param.login_error}">
   <font color="red">
@@ -55,7 +61,7 @@
             </div>
             <noscript>
             <p>OpenID is a service that allows you to log-on to many different websites using a single identity.
-            Find out <a href="http://openid.net/what/">more about OpenID</a> and <a href="http://openid.net/get/">how to get an OpenID enabled account</a>.</p>
+            Find out <a href="https://openid.net/what/">more about OpenID</a> and <a href="https://openid.net/get/">how to get an OpenID enabled account</a>.</p>
             </noscript>
     </fieldset>
 </form:form>

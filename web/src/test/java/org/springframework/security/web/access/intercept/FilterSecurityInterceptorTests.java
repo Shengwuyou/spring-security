@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +21,7 @@ import static org.mockito.Mockito.*;
 
 import org.junit.*;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.access.AccessDecisionManager;
@@ -59,7 +60,7 @@ public class FilterSecurityInterceptorTests {
 	// ========================================================================================================
 
 	@Before
-	public final void setUp() throws Exception {
+	public final void setUp() {
 		interceptor = new FilterSecurityInterceptor();
 		am = mock(AuthenticationManager.class);
 		ods = mock(FilterInvocationSecurityMetadataSource.class);
@@ -75,7 +76,7 @@ public class FilterSecurityInterceptorTests {
 	}
 
 	@After
-	public void tearDown() throws Exception {
+	public void tearDown() {
 		SecurityContextHolder.clearContext();
 	}
 
@@ -176,6 +177,18 @@ public class FilterSecurityInterceptorTests {
 		// Check we've changed back
 		assertThat(SecurityContextHolder.getContext()).isSameAs(ctx);
 		assertThat(SecurityContextHolder.getContext().getAuthentication()).isSameAs(token);
+	}
+
+	@Test
+	// gh-4997
+	public void doFilterWhenObserveOncePerRequestThenAttributeNotSet() throws Exception {
+		this.interceptor.setObserveOncePerRequest(false);
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		MockHttpServletRequest request = new MockHttpServletRequest();
+
+		this.interceptor.doFilter(request, response, new MockFilterChain());
+
+		assertThat(request.getAttributeNames().hasMoreElements()).isFalse();
 	}
 
 	private FilterInvocation createinvocation() {

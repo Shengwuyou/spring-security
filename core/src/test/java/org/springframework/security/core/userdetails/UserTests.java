@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +23,7 @@ import java.io.ObjectOutputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.junit.Test;
 import org.springframework.security.core.GrantedAuthority;
@@ -53,9 +54,9 @@ public class UserTests {
 	}
 
 	@Test
-	public void hashLookupOnlyDependsOnUsername() throws Exception {
+	public void hashLookupOnlyDependsOnUsername() {
 		User user1 = new User("rod", "koala", true, true, true, true, ROLE_12);
-		Set<UserDetails> users = new HashSet<UserDetails>();
+		Set<UserDetails> users = new HashSet<>();
 		users.add(user1);
 
 		assertThat(users).contains(new User("rod", "koala", true, true, true, true,
@@ -79,7 +80,7 @@ public class UserTests {
 	}
 
 	@Test
-	public void testNullValuesRejected() throws Exception {
+	public void testNullValuesRejected() {
 		try {
 			new User(null, "koala", true, true, true, true, ROLE_12);
 			fail("Should have thrown IllegalArgumentException");
@@ -105,7 +106,7 @@ public class UserTests {
 	}
 
 	@Test
-	public void testNullWithinGrantedAuthorityElementIsRejected() throws Exception {
+	public void testNullWithinGrantedAuthorityElementIsRejected() {
 		try {
 			List<GrantedAuthority> auths = AuthorityUtils.createAuthorityList("ROLE_ONE");
 			auths.add(null);
@@ -118,7 +119,7 @@ public class UserTests {
 	}
 
 	@Test
-	public void testUserGettersSetter() throws Exception {
+	public void testUserGettersSetter() {
 		UserDetails user = new User("rod", "koala", true, true, true, true,
 				AuthorityUtils.createAuthorityList("ROLE_TWO", "ROLE_ONE"));
 		assertThat(user.getUsername()).isEqualTo("rod");
@@ -128,11 +129,11 @@ public class UserTests {
 				"ROLE_ONE");
 		assertThat(AuthorityUtils.authorityListToSet(user.getAuthorities())).contains(
 				"ROLE_TWO");
-		assertThat(user.toString().indexOf("rod") != -1).isTrue();
+		assertThat(user.toString()).contains("rod");
 	}
 
 	@Test
-	public void enabledFlagIsFalseForDisabledAccount() throws Exception {
+	public void enabledFlagIsFalseForDisabledAccount() {
 		UserDetails user = new User("rod", "koala", false, true, true, true, ROLE_12);
 		assertThat(user.isEnabled()).isFalse();
 	}
@@ -148,8 +149,8 @@ public class UserTests {
 	}
 
 	@Test
-	public void withUserDetailsWhenAllEnabled() throws Exception {
-		User expected = new User("rob","pass", true, true, true, true, ROLE_12);
+	public void withUserDetailsWhenAllEnabled() {
+		User expected = new User("rob", "pass", true, true, true, true, ROLE_12);
 
 		UserDetails actual = User.withUserDetails(expected).build();
 
@@ -164,8 +165,8 @@ public class UserTests {
 
 
 	@Test
-	public void withUserDetailsWhenAllDisabled() throws Exception {
-		User expected = new User("rob","pass", false, false, false, false, ROLE_12);
+	public void withUserDetailsWhenAllDisabled() {
+		User expected = new User("rob", "pass", false, false, false, false, ROLE_12);
 
 		UserDetails actual = User.withUserDetails(expected).build();
 
@@ -176,5 +177,51 @@ public class UserTests {
 		assertThat(actual.isAccountNonLocked()).isEqualTo(expected.isAccountNonLocked());
 		assertThat(actual.isCredentialsNonExpired()).isEqualTo(expected.isCredentialsNonExpired());
 		assertThat(actual.isEnabled()).isEqualTo(expected.isEnabled());
+	}
+
+	@Test
+	public void withUserWhenDetailsPasswordEncoderThenEncodes() {
+		UserDetails userDetails = User.withUsername("user").password("password").roles("USER").build();
+
+		UserDetails withEncodedPassword = User.withUserDetails(userDetails)
+			.passwordEncoder(p -> p + "encoded")
+			.build();
+
+		assertThat(withEncodedPassword.getPassword()).isEqualTo("passwordencoded");
+	}
+
+	@Test
+	public void withUsernameWhenPasswordEncoderAndPasswordThenEncodes() {
+		UserDetails withEncodedPassword = User.withUsername("user")
+			.password("password")
+			.passwordEncoder(p -> p + "encoded")
+			.roles("USER")
+			.build();
+
+		assertThat(withEncodedPassword.getPassword()).isEqualTo("passwordencoded");
+	}
+
+	@Test
+	public void withUsernameWhenPasswordAndPasswordEncoderThenEncodes() {
+		UserDetails withEncodedPassword = User.withUsername("user")
+			.passwordEncoder(p -> p + "encoded")
+			.password("password")
+			.roles("USER")
+			.build();
+
+		assertThat(withEncodedPassword.getPassword()).isEqualTo("passwordencoded");
+	}
+
+	@Test
+	public void withUsernameWhenPasswordAndPasswordEncoderTwiceThenEncodesOnce() {
+		Function<String, String> encoder = p -> p + "encoded";
+		UserDetails withEncodedPassword = User.withUsername("user")
+			.passwordEncoder(encoder)
+			.password("password")
+			.passwordEncoder(encoder)
+			.roles("USER")
+			.build();
+
+		assertThat(withEncodedPassword.getPassword()).isEqualTo("passwordencoded");
 	}
 }

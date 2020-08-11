@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,10 +15,10 @@
  */
 package org.springframework.security.config.annotation.authentication.ldap;
 
-import org.springframework.security.authentication.encoding.PlaintextPasswordEncoder;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.ldap.userdetails.LdapAuthoritiesPopulator;
 import org.springframework.security.ldap.userdetails.PersonContextMapper;
 
@@ -90,7 +90,7 @@ public class NamespaceLdapAuthenticationProviderTestsConfigs {
 					.groupSearchBase("ou=groups")
 					.userSearchFilter("(uid={0})")
 					.passwordCompare()
-						.passwordEncoder(new PlaintextPasswordEncoder()) // ldap-authentication-provider/password-compare/password-encoder@ref
+						.passwordEncoder(new BCryptPasswordEncoder()) // ldap-authentication-provider/password-compare/password-encoder@ref
 						.passwordAttribute("userPassword"); // ldap-authentication-provider/password-compare@password-attribute
 		}
 		// @formatter:on

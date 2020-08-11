@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +19,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
+ * <p>
+ * User's should consider using {@link StrictHttpFirewall} because rather than trying to
+ * sanitize a malicious URL it rejects the malicious URL providing better security
+ * guarantees.
+ * <p>
  * Default implementation which wraps requests in order to provide consistent
  * values of the {@code servletPath} and {@code pathInfo}, which do not contain
  * path parameters (as defined in
- * <a href="http://www.ietf.org/rfc/rfc2396.txt">RFC 2396</a>). Different
+ * <a href="https://www.ietf.org/rfc/rfc2396.txt">RFC 2396</a>). Different
  * servlet containers interpret the servlet spec differently as to how path
  * parameters are treated and it is possible they might be added in order to
  * bypass particular security constraints. When using this implementation, they
@@ -38,6 +43,7 @@ import javax.servlet.http.HttpServletResponse;
  * again this is not guaranteed by the servlet spec.
  *
  * @author Luke Taylor
+ * @see StrictHttpFirewall
  */
 public class DefaultHttpFirewall implements HttpFirewall {
 	private boolean allowUrlEncodedSlash;

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,7 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.security.core.context.SecurityContext;
@@ -64,9 +64,6 @@ public class WebAsyncManagerIntegrationFilterTests {
 
 	@Before
 	public void setUp() {
-		when(asyncWebRequest.getNativeRequest(HttpServletRequest.class)).thenReturn(
-				request);
-		when(request.getRequestURI()).thenReturn("/");
 		filterChain = new MockFilterChain();
 
 		threadFactory = new JoinableThreadFactory();
@@ -95,7 +92,7 @@ public class WebAsyncManagerIntegrationFilterTests {
 				.registerCallableInterceptors(new CallableProcessingInterceptorAdapter() {
 					@Override
 					public <T> void postProcess(NativeWebRequest request,
-							Callable<T> task, Object concurrentResult) throws Exception {
+							Callable<T> task, Object concurrentResult) {
 						assertThat(SecurityContextHolder.getContext()).isNotSameAs(
 								securityContext);
 					}
@@ -116,7 +113,7 @@ public class WebAsyncManagerIntegrationFilterTests {
 				.registerCallableInterceptors(new CallableProcessingInterceptorAdapter() {
 					@Override
 					public <T> void postProcess(NativeWebRequest request,
-							Callable<T> task, Object concurrentResult) throws Exception {
+							Callable<T> task, Object concurrentResult) {
 						assertThat(SecurityContextHolder.getContext()).isNotSameAs(
 								securityContext);
 					}
@@ -145,7 +142,7 @@ public class WebAsyncManagerIntegrationFilterTests {
 
 	private class VerifyingCallable implements Callable<SecurityContext> {
 
-		public SecurityContext call() throws Exception {
+		public SecurityContext call() {
 			return SecurityContextHolder.getContext();
 		}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,7 +52,7 @@ import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
  * 	}
  *
  * 	&#064;Override
- * 	protected void configure(AuthenticationManagerBuilder auth) {
+ * 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
  * 		auth
  * 		// enable in memory based authentication with a user named &quot;user&quot; and &quot;admin&quot;
  * 		.inMemoryAuthentication().withUser(&quot;user&quot;).password(&quot;password&quot;).roles(&quot;USER&quot;)
@@ -73,7 +73,9 @@ import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
 @Target(value = { java.lang.annotation.ElementType.TYPE })
 @Documented
 @Import({ WebSecurityConfiguration.class,
-		SpringWebMvcImportSelector.class })
+		SpringWebMvcImportSelector.class,
+		OAuth2ImportSelector.class,
+		HttpSecurityConfiguration.class})
 @EnableGlobalAuthentication
 @Configuration
 public @interface EnableWebSecurity {

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,14 +52,14 @@ public class HttpSecurityLogoutTests {
 
 	@Before
 	public void setup() {
-		request = new MockHttpServletRequest();
+		request = new MockHttpServletRequest("GET", "");
 		response = new MockHttpServletResponse();
 		chain = new MockFilterChain();
 	}
 
 	@After
 	public void cleanup() {
-		if(context != null) {
+		if (context != null) {
 			context.close();
 		}
 	}
@@ -70,7 +70,7 @@ public class HttpSecurityLogoutTests {
 		loadConfig(ClearAuthenticationFalseConfig.class);
 
 		SecurityContext currentContext = SecurityContextHolder.createEmptyContext();
-		currentContext.setAuthentication(new TestingAuthenticationToken("user", "password","ROLE_USER"));
+		currentContext.setAuthentication(new TestingAuthenticationToken("user", "password", "ROLE_USER"));
 
 		request.getSession().setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, currentContext);
 		request.setMethod("POST");

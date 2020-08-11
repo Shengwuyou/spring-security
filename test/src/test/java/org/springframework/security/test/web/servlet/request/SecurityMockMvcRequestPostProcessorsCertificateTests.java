@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import java.security.cert.X509Certificate;
@@ -58,7 +58,7 @@ public class SecurityMockMvcRequestPostProcessorsCertificateTests {
 		X509Certificate[] certificates = (X509Certificate[]) postProcessedRequest
 				.getAttribute("javax.servlet.request.X509Certificate");
 
-		assertThat(certificates.length).isEqualTo(1);
+		assertThat(certificates).hasSize(1);
 		assertThat(certificates[0].getSubjectDN().getName()).isEqualTo(
 				"CN=rod, OU=Spring Security, O=Spring Framework");
 	}

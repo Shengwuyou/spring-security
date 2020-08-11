@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -77,7 +77,7 @@ class SavedRequestAwareWrapper extends HttpServletRequestWrapper {
 	// ~ Constructors
 	// ===================================================================================================
 
-	public SavedRequestAwareWrapper(SavedRequest saved, HttpServletRequest request) {
+	SavedRequestAwareWrapper(SavedRequest saved, HttpServletRequest request) {
 		super(request);
 		savedRequest = saved;
 
@@ -121,13 +121,13 @@ class SavedRequestAwareWrapper extends HttpServletRequestWrapper {
 	@Override
 	@SuppressWarnings("unchecked")
 	public Enumeration getHeaderNames() {
-		return new Enumerator<String>(savedRequest.getHeaderNames());
+		return new Enumerator<>(savedRequest.getHeaderNames());
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public Enumeration getHeaders(String name) {
-		return new Enumerator<String>(savedRequest.getHeaderValues(name));
+		return new Enumerator<>(savedRequest.getHeaderValues(name));
 	}
 
 	@Override
@@ -156,11 +156,11 @@ class SavedRequestAwareWrapper extends HttpServletRequestWrapper {
 
 		if (locales.isEmpty()) {
 			// Fall back to default locale
-			locales = new ArrayList<Locale>(1);
+			locales = new ArrayList<>(1);
 			locales.add(Locale.getDefault());
 		}
 
-		return new Enumerator<Locale>(locales);
+		return new Enumerator<>(locales);
 	}
 
 	@Override
@@ -199,7 +199,7 @@ class SavedRequestAwareWrapper extends HttpServletRequestWrapper {
 	@SuppressWarnings("unchecked")
 	public Map getParameterMap() {
 		Set<String> names = getCombinedParameterNames();
-		Map<String, String[]> parameterMap = new HashMap<String, String[]>(names.size());
+		Map<String, String[]> parameterMap = new HashMap<>(names.size());
 
 		for (String name : names) {
 			parameterMap.put(name, getParameterValues(name));
@@ -210,7 +210,7 @@ class SavedRequestAwareWrapper extends HttpServletRequestWrapper {
 
 	@SuppressWarnings("unchecked")
 	private Set<String> getCombinedParameterNames() {
-		Set<String> names = new HashSet<String>();
+		Set<String> names = new HashSet<>();
 		names.addAll(super.getParameterMap().keySet());
 		names.addAll(savedRequest.getParameterMap().keySet());
 
@@ -238,7 +238,7 @@ class SavedRequestAwareWrapper extends HttpServletRequestWrapper {
 
 		// We have parameters in both saved and wrapped requests so have to merge them
 		List<String> wrappedParamsList = Arrays.asList(wrappedRequestParams);
-		List<String> combinedParams = new ArrayList<String>(wrappedParamsList);
+		List<String> combinedParams = new ArrayList<>(wrappedParamsList);
 
 		// We want to add all parameters of the saved request *apart from* duplicates of
 		// those already added
@@ -248,6 +248,6 @@ class SavedRequestAwareWrapper extends HttpServletRequestWrapper {
 			}
 		}
 
-		return combinedParams.toArray(new String[combinedParams.size()]);
+		return combinedParams.toArray(new String[0]);
 	}
 }

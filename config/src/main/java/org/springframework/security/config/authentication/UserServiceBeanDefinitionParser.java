@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -82,7 +82,7 @@ public class UserServiceBeanDefinitionParser extends
 							+ ATT_PROPERTIES + "' attribute)");
 		}
 
-		ManagedList<BeanDefinition> users = new ManagedList<BeanDefinition>();
+		ManagedList<BeanDefinition> users = new ManagedList<>();
 
 		for (Object elt : userElts) {
 			Element userElt = (Element) elt;

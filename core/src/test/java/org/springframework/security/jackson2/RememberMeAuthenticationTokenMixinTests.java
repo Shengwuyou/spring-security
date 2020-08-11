@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -60,12 +60,12 @@ public class RememberMeAuthenticationTokenMixinTests extends AbstractMixinTests 
 	// @formatter:on
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testWithNullPrincipal() throws JsonProcessingException, JSONException {
+	public void testWithNullPrincipal() {
 		new RememberMeAuthenticationToken("key", null, Collections.<GrantedAuthority>emptyList());
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testWithNullKey() throws JsonProcessingException, JSONException {
+	public void testWithNullKey() {
 		new RememberMeAuthenticationToken(null, "principal", Collections.<GrantedAuthority>emptyList());
 	}
 
@@ -107,8 +107,8 @@ public class RememberMeAuthenticationTokenMixinTests extends AbstractMixinTests 
 				.readValue(String.format(REMEMBERME_AUTH_JSON, "\"password\""), RememberMeAuthenticationToken.class);
 		assertThat(token).isNotNull();
 		assertThat(token.getPrincipal()).isNotNull().isInstanceOf(User.class);
-		assertThat(((User)token.getPrincipal()).getUsername()).isEqualTo("admin");
-		assertThat(((User)token.getPrincipal()).getPassword()).isEqualTo("1234");
+		assertThat(((User) token.getPrincipal()).getUsername()).isEqualTo("admin");
+		assertThat(((User) token.getPrincipal()).getPassword()).isEqualTo("1234");
 		assertThat(((User) token.getPrincipal()).getAuthorities()).hasSize(1).contains(new SimpleGrantedAuthority("ROLE_USER"));
 		assertThat(token.getAuthorities()).hasSize(1).contains(new SimpleGrantedAuthority("ROLE_USER"));
 		assertThat(((User) token.getPrincipal()).isEnabled()).isEqualTo(true);

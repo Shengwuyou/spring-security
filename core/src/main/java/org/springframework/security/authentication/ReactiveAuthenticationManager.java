@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,11 +20,21 @@ import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Mono;
 
 /**
+ * Determines if the provided {@link Authentication} can be authenticated.
  *
  * @author Rob Winch
  * @since 5.0
  */
+@FunctionalInterface
 public interface ReactiveAuthenticationManager {
 
+	/**
+	 * Attempts to authenticate the provided {@link Authentication}
+	 *
+	 * @param authentication the {@link Authentication} to test
+	 * @return if authentication is successful an {@link Authentication} is returned. If
+	 * authentication cannot be determined, an empty Mono is returned. If authentication
+	 * fails, a Mono error is returned.
+	 */
 	Mono<Authentication> authenticate(Authentication authentication);
 }

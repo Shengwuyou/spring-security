@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -63,7 +63,7 @@ public abstract class HierarchicalRolesTestHelper {
 			return null;
 		}
 
-		List<String> result = new ArrayList<String>(authorities.size());
+		List<String> result = new ArrayList<>(authorities.size());
 		for (GrantedAuthority authority : authorities) {
 			result.add(authority.getAuthority());
 		}
@@ -71,15 +71,11 @@ public abstract class HierarchicalRolesTestHelper {
 	}
 
 	public static List<GrantedAuthority> createAuthorityList(final String... roles) {
-		List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>(roles.length);
+		List<GrantedAuthority> authorities = new ArrayList<>(roles.length);
 
 		for (final String role : roles) {
 			// Use non SimpleGrantedAuthority (SEC-863)
-			authorities.add(new GrantedAuthority() {
-				public String getAuthority() {
-					return role;
-				}
-			});
+			authorities.add((GrantedAuthority) () -> role);
 		}
 
 		return authorities;

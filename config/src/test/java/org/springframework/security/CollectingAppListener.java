@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,10 +30,10 @@ import org.springframework.security.authentication.event.AbstractAuthenticationF
  * @since 3.1
  */
 public class CollectingAppListener implements ApplicationListener {
-	Set<ApplicationEvent> events = new HashSet<ApplicationEvent>();
-	Set<AbstractAuthenticationEvent> authenticationEvents = new HashSet<AbstractAuthenticationEvent>();
-	Set<AbstractAuthenticationFailureEvent> authenticationFailureEvents = new HashSet<AbstractAuthenticationFailureEvent>();
-	Set<AbstractAuthorizationEvent> authorizationEvents = new HashSet<AbstractAuthorizationEvent>();
+	Set<ApplicationEvent> events = new HashSet<>();
+	Set<AbstractAuthenticationEvent> authenticationEvents = new HashSet<>();
+	Set<AbstractAuthenticationFailureEvent> authenticationFailureEvents = new HashSet<>();
+	Set<AbstractAuthorizationEvent> authorizationEvents = new HashSet<>();
 
 	public void onApplicationEvent(ApplicationEvent event) {
 		if (event instanceof AbstractAuthenticationEvent) {

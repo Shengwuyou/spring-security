@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -63,7 +63,8 @@ public class DefaultAuthenticationEventPublisher implements AuthenticationEventP
 	private final Log logger = LogFactory.getLog(getClass());
 
 	private ApplicationEventPublisher applicationEventPublisher;
-	private final HashMap<String, Constructor<? extends AbstractAuthenticationEvent>> exceptionMappings = new HashMap<String, Constructor<? extends AbstractAuthenticationEvent>>();
+	private final HashMap<String, Constructor<? extends AbstractAuthenticationEvent>> exceptionMappings = new HashMap<>();
+	private Constructor<? extends AbstractAuthenticationFailureEvent> defaultAuthenticationFailureEventConstructor;
 
 	public DefaultAuthenticationEventPublisher() {
 		this(null);
@@ -92,6 +93,9 @@ public class DefaultAuthenticationEventPublisher implements AuthenticationEventP
 		addMapping(
 				"org.springframework.security.authentication.cas.ProxyUntrustedException",
 				AuthenticationFailureProxyUntrustedEvent.class);
+		addMapping(
+				"org.springframework.security.oauth2.server.resource.InvalidBearerTokenException",
+				AuthenticationFailureBadCredentialsEvent.class);
 	}
 
 	public void publishAuthenticationSuccess(Authentication authentication) {
@@ -103,19 +107,14 @@ public class DefaultAuthenticationEventPublisher implements AuthenticationEventP
 
 	public void publishAuthenticationFailure(AuthenticationException exception,
 			Authentication authentication) {
-		Constructor<? extends AbstractAuthenticationEvent> constructor = exceptionMappings
-				.get(exception.getClass().getName());
+		Constructor<? extends AbstractAuthenticationEvent> constructor = getEventConstructor(exception);
 		AbstractAuthenticationEvent event = null;
 
 		if (constructor != null) {
 			try {
 				event = constructor.newInstance(authentication, exception);
 			}
-			catch (IllegalAccessException ignored) {
-			}
-			catch (InstantiationException ignored) {
-			}
-			catch (InvocationTargetException ignored) {
+			catch (IllegalAccessException | InvocationTargetException | InstantiationException ignored) {
 			}
 		}
 
@@ -132,6 +131,12 @@ public class DefaultAuthenticationEventPublisher implements AuthenticationEventP
 		}
 	}
 
+	private Constructor<? extends AbstractAuthenticationEvent> getEventConstructor(AuthenticationException exception) {
+		Constructor<? extends AbstractAuthenticationEvent> eventConstructor =
+				this.exceptionMappings.get(exception.getClass().getName());
+		return (eventConstructor == null ? this.defaultAuthenticationFailureEventConstructor : eventConstructor);
+	}
+
 	public void setApplicationEventPublisher(
 			ApplicationEventPublisher applicationEventPublisher) {
 		this.applicationEventPublisher = applicationEventPublisher;
@@ -144,7 +149,10 @@ public class DefaultAuthenticationEventPublisher implements AuthenticationEventP
 	 * @param additionalExceptionMappings where keys are the fully-qualified string name
 	 * of the exception class and the values are the fully-qualified string name of the
 	 * event class to fire.
+	 *
+	 * @deprecated use {@link #setAdditionalExceptionMappings(Map)}
 	 */
+	@Deprecated
 	@SuppressWarnings({ "unchecked" })
 	public void setAdditionalExceptionMappings(Properties additionalExceptionMappings) {
 		Assert.notNull(additionalExceptionMappings,
@@ -161,6 +169,46 @@ public class DefaultAuthenticationEventPublisher implements AuthenticationEventP
 				throw new RuntimeException("Failed to load authentication event class "
 						+ eventClass);
 			}
+		}
+	}
+
+	/**
+	 * Sets additional exception to event mappings. These are automatically merged with
+	 * the default exception to event mappings that <code>ProviderManager</code> defines.
+	 *
+	 * @param mappings where keys are exception classes and values are event classes.
+	 * @since 5.3
+	 */
+	public void setAdditionalExceptionMappings(Map<Class<? extends AuthenticationException>,
+			Class<? extends AbstractAuthenticationFailureEvent>> mappings){
+		Assert.notEmpty(mappings, "The mappings Map must not be empty nor null");
+		for (Map.Entry<Class<? extends AuthenticationException>, Class<? extends AbstractAuthenticationFailureEvent>> entry
+				: mappings.entrySet()) {
+				Class<?> exceptionClass = entry.getKey();
+				Class<?> eventClass = entry.getValue();
+				Assert.notNull(exceptionClass, "exceptionClass cannot be null");
+				Assert.notNull(eventClass, "eventClass cannot be null");
+				addMapping(exceptionClass.getName(), (Class<? extends AbstractAuthenticationFailureEvent>) eventClass);
+		}
+	}
+
+	/**
+	 * Sets a default authentication failure event as a fallback event for any unmapped
+	 * exceptions not mapped in the exception mappings.
+	 *
+	 * @param defaultAuthenticationFailureEventClass is the authentication failure event class
+	 * to be fired for unmapped exceptions.
+	 */
+	public void setDefaultAuthenticationFailureEvent(
+			Class<? extends AbstractAuthenticationFailureEvent> defaultAuthenticationFailureEventClass) {
+		Assert.notNull(defaultAuthenticationFailureEventClass,
+				"defaultAuthenticationFailureEventClass must not be null");
+		try {
+			this.defaultAuthenticationFailureEventConstructor = defaultAuthenticationFailureEventClass
+					.getConstructor(Authentication.class, AuthenticationException.class);
+		} catch (NoSuchMethodException e) {
+			throw new RuntimeException("Default Authentication Failure event class "
+					+ defaultAuthenticationFailureEventClass.getName() + " has no suitable constructor");
 		}
 	}
 

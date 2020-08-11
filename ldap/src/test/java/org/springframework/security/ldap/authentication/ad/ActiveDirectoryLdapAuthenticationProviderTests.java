@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,18 @@
  * limitations under the License.
  */
 package org.springframework.security.ldap.authentication.ad;
+
+import java.util.Collections;
+import java.util.Hashtable;
+import javax.naming.AuthenticationException;
+import javax.naming.CommunicationException;
+import javax.naming.Name;
+import javax.naming.NameNotFoundException;
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.SearchControls;
+import javax.naming.directory.SearchResult;
 
 import org.apache.directory.shared.ldap.util.EmptyEnumeration;
 import org.hamcrest.BaseMatcher;
@@ -25,6 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
+
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.DistinguishedName;
@@ -32,25 +45,18 @@ import org.springframework.security.authentication.AccountExpiredException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.CredentialsExpiredException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
-import javax.naming.AuthenticationException;
-import javax.naming.CommunicationException;
-import javax.naming.Name;
-import javax.naming.NameNotFoundException;
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.directory.DirContext;
-import javax.naming.directory.SearchControls;
-import javax.naming.directory.SearchResult;
-
-import java.util.Hashtable;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider.ContextFactory;
 
 /**
@@ -58,6 +64,9 @@ import static org.springframework.security.ldap.authentication.ad.ActiveDirector
  * @author Rob Winch
  */
 public class ActiveDirectoryLdapAuthenticationProviderTests {
+	public static final String EXISTING_LDAP_PROVIDER = "ldap://192.168.1.200/";
+	public static final String NON_EXISTING_LDAP_PROVIDER = "ldap://192.168.1.201/";
+
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
@@ -66,13 +75,13 @@ public class ActiveDirectoryLdapAuthenticationProviderTests {
 			"joe", "password");
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		provider = new ActiveDirectoryLdapAuthenticationProvider("mydomain.eu",
 				"ldap://192.168.1.200/");
 	}
 
 	@Test
-	public void bindPrincipalIsCreatedCorrectly() throws Exception {
+	public void bindPrincipalIsCreatedCorrectly() {
 		assertThat(provider.createBindPrincipal("joe")).isEqualTo("joe@mydomain.eu");
 		assertThat(provider.createBindPrincipal("joe@mydomain.eu")).isEqualTo("joe@mydomain.eu");
 	}
@@ -140,9 +149,9 @@ public class ActiveDirectoryLdapAuthenticationProviderTests {
 				any(Object[].class), any(SearchControls.class));
 	}
 
-	// SEC-2897
+	// SEC-2897,SEC-2224
 	@Test
-	public void bindPrincipalUsed() throws Exception {
+	public void bindPrincipalAndUsernameUsed() throws Exception {
 		// given
 		final String defaultSearchFilter = "(&(objectClass=user)(userPrincipalName={0}))";
 		ArgumentCaptor<Object[]> captor = ArgumentCaptor.forClass(Object[].class);
@@ -166,7 +175,7 @@ public class ActiveDirectoryLdapAuthenticationProviderTests {
 		Authentication result = customProvider.authenticate(joe);
 
 		// then
-		assertThat(captor.getValue()).containsOnly("joe@mydomain.eu");
+		assertThat(captor.getValue()).containsExactly("joe@mydomain.eu", "joe");
 		assertThat(result.isAuthenticated()).isTrue();
 	}
 
@@ -230,7 +239,7 @@ public class ActiveDirectoryLdapAuthenticationProviderTests {
 		when(
 				ctx.search(any(Name.class), any(String.class), any(Object[].class),
 						any(SearchControls.class))).thenReturn(
-				new EmptyEnumeration<SearchResult>());
+				new EmptyEnumeration<>());
 
 		provider.contextFactory = createContextFactoryReturning(ctx);
 
@@ -370,7 +379,7 @@ public class ActiveDirectoryLdapAuthenticationProviderTests {
 	}
 
 	@Test(expected = BadCredentialsException.class)
-	public void errorWithNoSubcodeIsHandledCleanly() throws Exception {
+	public void errorWithNoSubcodeIsHandledCleanly() {
 		provider.contextFactory = createContextFactoryThrowing(new AuthenticationException(
 				msg));
 		provider.setConvertSubErrorCodesToExceptions(true);
@@ -378,19 +387,62 @@ public class ActiveDirectoryLdapAuthenticationProviderTests {
 	}
 
 	@Test(expected = org.springframework.ldap.CommunicationException.class)
-	public void nonAuthenticationExceptionIsConvertedToSpringLdapException()
-			throws Exception {
-		provider.contextFactory = createContextFactoryThrowing(new CommunicationException(
-				msg));
-		provider.authenticate(joe);
+	public void nonAuthenticationExceptionIsConvertedToSpringLdapException() throws Throwable {
+		try {
+			provider.contextFactory = createContextFactoryThrowing(new CommunicationException(
+					msg));
+			provider.authenticate(joe);
+		} catch (InternalAuthenticationServiceException e) {
+			// Since GH-8418 ldap communication exception is wrapped into InternalAuthenticationServiceException.
+			// This test is about the wrapped exception, so we throw it.
+			throw e.getCause();
+		}
+	}
+
+	@Test(expected = org.springframework.security.authentication.InternalAuthenticationServiceException.class )
+	public void connectionExceptionIsWrappedInInternalException() throws Exception {
+		ActiveDirectoryLdapAuthenticationProvider noneReachableProvider = new ActiveDirectoryLdapAuthenticationProvider(
+				"mydomain.eu", NON_EXISTING_LDAP_PROVIDER, "dc=ad,dc=eu,dc=mydomain");
+		noneReachableProvider.setContextEnvironmentProperties(
+				Collections.singletonMap("com.sun.jndi.ldap.connect.timeout", "5"));
+		noneReachableProvider.doAuthentication(joe);
 	}
 
 	@Test
 	public void rootDnProvidedSeparatelyFromDomainAlsoWorks() throws Exception {
 		ActiveDirectoryLdapAuthenticationProvider provider = new ActiveDirectoryLdapAuthenticationProvider(
-				"mydomain.eu", "ldap://192.168.1.200/", "dc=ad,dc=eu,dc=mydomain");
+				"mydomain.eu", EXISTING_LDAP_PROVIDER, "dc=ad,dc=eu,dc=mydomain");
 		checkAuthentication("dc=ad,dc=eu,dc=mydomain", provider);
 
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void setContextEnvironmentPropertiesNull() {
+		provider.setContextEnvironmentProperties(null);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void setContextEnvironmentPropertiesEmpty() {
+		provider.setContextEnvironmentProperties(new Hashtable<>());
+	}
+
+	@Test
+	public void contextEnvironmentPropertiesUsed() {
+		Hashtable<String, Object> env = new Hashtable<>();
+
+		env.put("java.naming.ldap.factory.socket", "unknown.package.NonExistingSocketFactory");
+		provider.setContextEnvironmentProperties(env);
+
+		try {
+			provider.authenticate(joe);
+			fail("CommunicationException was expected with a root cause of ClassNotFoundException");
+		}
+		catch (InternalAuthenticationServiceException expected) {
+			assertThat(expected.getCause()).isInstanceOf(org.springframework.ldap.CommunicationException.class);
+			org.springframework.ldap.CommunicationException cause =
+					(org.springframework.ldap.CommunicationException) expected.getCause();
+			assertThat(cause.getRootCause()).isInstanceOf(ClassNotFoundException.class);
+		}
 	}
 
 	ContextFactory createContextFactoryThrowing(final NamingException e) {
@@ -405,7 +457,7 @@ public class ActiveDirectoryLdapAuthenticationProviderTests {
 	ContextFactory createContextFactoryReturning(final DirContext ctx) {
 		return new ContextFactory() {
 			@Override
-			DirContext createContext(Hashtable<?, ?> env) throws NamingException {
+			DirContext createContext(Hashtable<?, ?> env) {
 				return ctx;
 			}
 		};
@@ -442,7 +494,7 @@ public class ActiveDirectoryLdapAuthenticationProviderTests {
 	static class MockNamingEnumeration implements NamingEnumeration<SearchResult> {
 		private SearchResult sr;
 
-		public MockNamingEnumeration(SearchResult sr) {
+		MockNamingEnumeration(SearchResult sr) {
 			this.sr = sr;
 		}
 

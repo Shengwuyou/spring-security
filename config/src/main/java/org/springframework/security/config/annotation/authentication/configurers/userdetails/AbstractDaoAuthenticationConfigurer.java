@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,10 @@ package org.springframework.security.config.annotation.authentication.configurer
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.SecurityBuilder;
-import org.springframework.security.config.annotation.SecurityConfigurer;
 import org.springframework.security.config.annotation.authentication.ProviderManagerBuilder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.userdetails.UserDetailsPasswordService;
 
 /**
  * Allows configuring a {@link DaoAuthenticationProvider}
@@ -47,6 +47,9 @@ abstract class AbstractDaoAuthenticationConfigurer<B extends ProviderManagerBuil
 	protected AbstractDaoAuthenticationConfigurer(U userDetailsService) {
 		this.userDetailsService = userDetailsService;
 		provider.setUserDetailsService(userDetailsService);
+		if (userDetailsService instanceof UserDetailsPasswordService) {
+			this.provider.setUserDetailsPasswordService((UserDetailsPasswordService) userDetailsService);
+		}
 	}
 
 	/**
@@ -66,7 +69,7 @@ abstract class AbstractDaoAuthenticationConfigurer<B extends ProviderManagerBuil
 	 * {@link DaoAuthenticationProvider}. The default is to use plain text.
 	 *
 	 * @param passwordEncoder The {@link PasswordEncoder} to use.
-	 * @return
+	 * @return the {@link AbstractDaoAuthenticationConfigurer} for further customizations
 	 */
 	@SuppressWarnings("unchecked")
 	public C passwordEncoder(PasswordEncoder passwordEncoder) {
@@ -74,20 +77,8 @@ abstract class AbstractDaoAuthenticationConfigurer<B extends ProviderManagerBuil
 		return (C) this;
 	}
 
-	/**
-	 * Allows specifying the
-	 * {@link org.springframework.security.authentication.encoding.PasswordEncoder} to use
-	 * with the {@link DaoAuthenticationProvider}. The default is to use plain text.
-	 *
-	 * @param passwordEncoder The
-	 * {@link org.springframework.security.authentication.encoding.PasswordEncoder} to
-	 * use.
-	 * @return the {@link SecurityConfigurer} for further customizations
-	 */
-	@SuppressWarnings("unchecked")
-	public C passwordEncoder(
-			org.springframework.security.authentication.encoding.PasswordEncoder passwordEncoder) {
-		provider.setPasswordEncoder(passwordEncoder);
+	public C userDetailsPasswordManager(UserDetailsPasswordService passwordManager) {
+		provider.setUserDetailsPasswordService(passwordManager);
 		return (C) this;
 	}
 

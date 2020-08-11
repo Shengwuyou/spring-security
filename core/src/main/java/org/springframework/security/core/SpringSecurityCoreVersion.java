@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.core.SpringVersion;
+
+import java.io.IOException;
+import java.util.Properties;
 
 /**
  * Internal class used for checking version compatibility in a deployed application.
@@ -38,9 +41,9 @@ public class SpringSecurityCoreVersion {
 	 * N.B. Classes are not intended to be serializable between different versions. See
 	 * SEC-1709 for why we still need a serial version.
 	 */
-	public static final long SERIAL_VERSION_UID = 500L;
+	public static final long SERIAL_VERSION_UID = 540L;
 
-	static final String MIN_SPRING_VERSION = "5.0.0.BUILD-SNAPSHOT";
+	static final String MIN_SPRING_VERSION = getSpringVersion();
 
 	static {
 		performVersionChecks();
@@ -64,6 +67,9 @@ public class SpringSecurityCoreVersion {
 	 * @param minSpringVersion
 	 */
 	private static void performVersionChecks(String minSpringVersion) {
+		if (minSpringVersion == null) {
+			return;
+		}
 		// Check Spring Compatibility
 		String springVersion = SpringVersion.getVersion();
 		String version = getVersion();
@@ -94,5 +100,19 @@ public class SpringSecurityCoreVersion {
 			return true;
 		}
 		return Boolean.getBoolean(DISABLE_CHECKS);
+	}
+
+	/**
+	 * Loads the spring version or null if it cannot be found.
+	 * @return
+	 */
+	private static String getSpringVersion() {
+		Properties properties = new Properties();
+		try {
+			properties.load(SpringSecurityCoreVersion.class.getClassLoader().getResourceAsStream("META-INF/spring-security.versions"));
+		} catch (IOException | NullPointerException e) {
+			return null;
+		}
+		return properties.getProperty("org.springframework:spring-core");
 	}
 }

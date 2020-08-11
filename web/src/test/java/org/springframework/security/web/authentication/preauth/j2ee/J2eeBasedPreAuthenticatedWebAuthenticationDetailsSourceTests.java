@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -124,12 +124,12 @@ public class J2eeBasedPreAuthenticatedWebAuthenticationDetailsSourceTests {
 		PreAuthenticatedGrantedAuthoritiesWebAuthenticationDetails details = (PreAuthenticatedGrantedAuthoritiesWebAuthenticationDetails) o;
 		List<GrantedAuthority> gas = details.getGrantedAuthorities();
 		assertThat(gas).as("Granted authorities should not be null").isNotNull();
-		assertThat(gas.size()).isEqualTo(expectedRoles.length);
+		assertThat(gas).hasSize(expectedRoles.length);
 
 		Collection<String> expectedRolesColl = Arrays.asList(expectedRoles);
-		Collection<String> gasRolesSet = new HashSet<String>();
-		for (int i = 0; i < gas.size(); i++) {
-			gasRolesSet.add(gas.get(i).getAuthority());
+		Collection<String> gasRolesSet = new HashSet<>();
+		for (GrantedAuthority grantedAuthority : gas) {
+			gasRolesSet.add(grantedAuthority.getAuthority());
 		}
 		assertThat(expectedRolesColl.containsAll(gasRolesSet)
 				&& gasRolesSet.containsAll(expectedRolesColl)).withFailMessage(
@@ -154,7 +154,7 @@ public class J2eeBasedPreAuthenticatedWebAuthenticationDetailsSourceTests {
 
 	private MappableAttributesRetriever getMappableRolesRetriever(String[] mappedRoles) {
 		SimpleMappableAttributesRetriever result = new SimpleMappableAttributesRetriever();
-		result.setMappableAttributes(new HashSet<String>(Arrays.asList(mappedRoles)));
+		result.setMappableAttributes(new HashSet<>(Arrays.asList(mappedRoles)));
 		return result;
 	}
 
@@ -170,7 +170,7 @@ public class J2eeBasedPreAuthenticatedWebAuthenticationDetailsSourceTests {
 	private HttpServletRequest getRequest(final String userName, final String[] aRoles) {
 		MockHttpServletRequest req = new MockHttpServletRequest() {
 
-			private Set<String> roles = new HashSet<String>(Arrays.asList(aRoles));
+			private Set<String> roles = new HashSet<>(Arrays.asList(aRoles));
 
 			public boolean isUserInRole(String arg0) {
 				return roles.contains(arg0);

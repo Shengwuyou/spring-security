@@ -1,3 +1,4 @@
+classes/
 target/
 */src/*/java/META-INF
 */src/META-INF/
@@ -7,7 +8,7 @@ target/
 .project
 .DS_Store
 .settings/
-.idea/
+.idea/*
 out/
 bin/
 intellij/
@@ -21,3 +22,9 @@ build/
 atlassian-ide-plugin.xml
 !etc/eclipse/.checkstyle
 .checkstyle
+s101plugin.state
+.attach_pid*
+.~lock.*#
+
+!.idea/checkstyle-idea.xml
+!.idea/externalDependencies.xml

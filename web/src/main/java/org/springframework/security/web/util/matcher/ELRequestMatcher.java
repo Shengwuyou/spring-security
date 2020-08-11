@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,7 +52,7 @@ public class ELRequestMatcher implements RequestMatcher {
 
 	public boolean matches(HttpServletRequest request) {
 		EvaluationContext context = createELContext(request);
-		return expression.getValue(context, Boolean.class).booleanValue();
+		return expression.getValue(context, Boolean.class);
 	}
 
 	/**
@@ -65,4 +65,11 @@ public class ELRequestMatcher implements RequestMatcher {
 		return new StandardEvaluationContext(new ELRequestMatcherContext(request));
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("EL [el=\"").append(this.expression.getExpressionString()).append("\"");
+		sb.append("]");
+		return sb.toString();
+	}
 }

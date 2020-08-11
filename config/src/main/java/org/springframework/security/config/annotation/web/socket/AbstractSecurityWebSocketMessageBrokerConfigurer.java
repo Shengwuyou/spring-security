@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -87,7 +87,7 @@ public abstract class AbstractSecurityWebSocketMessageBrokerConfigurer extends
 		AbstractWebSocketMessageBrokerConfigurer implements SmartInitializingSingleton {
 	private final WebSocketMessageSecurityMetadataSourceRegistry inboundRegistry = new WebSocketMessageSecurityMetadataSourceRegistry();
 
-	private SecurityExpressionHandler<Message<Object>> defaultExpressionHandler = new DefaultMessageSecurityExpressionHandler<Object>();
+	private SecurityExpressionHandler<Message<Object>> defaultExpressionHandler = new DefaultMessageSecurityExpressionHandler<>();
 
 	private SecurityExpressionHandler<Message<Object>> expressionHandler;
 
@@ -103,10 +103,10 @@ public abstract class AbstractSecurityWebSocketMessageBrokerConfigurer extends
 
 	@Override
 	public final void configureClientInboundChannel(ChannelRegistration registration) {
-		ChannelSecurityInterceptor inboundChannelSecurity = inboundChannelSecurity();
-		registration.setInterceptors(securityContextChannelInterceptor());
+		ChannelSecurityInterceptor inboundChannelSecurity = context.getBean(ChannelSecurityInterceptor.class);
+		registration.setInterceptors(context.getBean(SecurityContextChannelInterceptor.class));
 		if (!sameOriginDisabled()) {
-			registration.setInterceptors(csrfChannelInterceptor());
+			registration.setInterceptors(context.getBean(CsrfChannelInterceptor.class));
 		}
 		if (inboundRegistry.containsMapping()) {
 			registration.setInterceptors(inboundChannelSecurity);
@@ -153,13 +153,13 @@ public abstract class AbstractSecurityWebSocketMessageBrokerConfigurer extends
 	}
 
 	@Bean
-	public ChannelSecurityInterceptor inboundChannelSecurity() {
+	public ChannelSecurityInterceptor inboundChannelSecurity(MessageSecurityMetadataSource messageSecurityMetadataSource) {
 		ChannelSecurityInterceptor channelSecurityInterceptor = new ChannelSecurityInterceptor(
-				inboundMessageSecurityMetadataSource());
-		MessageExpressionVoter<Object> voter = new MessageExpressionVoter<Object>();
+				messageSecurityMetadataSource);
+		MessageExpressionVoter<Object> voter = new MessageExpressionVoter<>();
 		voter.setExpressionHandler(getMessageExpressionHandler());
 
-		List<AccessDecisionVoter<? extends Object>> voters = new ArrayList<AccessDecisionVoter<? extends Object>>();
+		List<AccessDecisionVoter<?>> voters = new ArrayList<>();
 		voters.add(voter);
 
 		AffirmativeBased manager = new AffirmativeBased(voters);
@@ -216,7 +216,7 @@ public abstract class AbstractSecurityWebSocketMessageBrokerConfigurer extends
 
 	@Autowired(required = false)
 	public void setMessageExpressionHandler(List<SecurityExpressionHandler<Message<Object>>> expressionHandlers) {
-		if(expressionHandlers.size() == 1) {
+		if (expressionHandlers.size() == 1) {
 			this.expressionHandler = expressionHandlers.get(0);
 		}
 	}
@@ -227,7 +227,7 @@ public abstract class AbstractSecurityWebSocketMessageBrokerConfigurer extends
 	}
 
 	private  SecurityExpressionHandler<Message<Object>> getMessageExpressionHandler() {
-		if(expressionHandler == null) {
+		if (expressionHandler == null) {
 			return defaultExpressionHandler;
 		}
 		return expressionHandler;
@@ -255,7 +255,7 @@ public abstract class AbstractSecurityWebSocketMessageBrokerConfigurer extends
 				TransportHandlingSockJsService transportHandlingSockJsService = (TransportHandlingSockJsService) sockJsService;
 				List<HandshakeInterceptor> handshakeInterceptors = transportHandlingSockJsService
 						.getHandshakeInterceptors();
-				List<HandshakeInterceptor> interceptorsToSet = new ArrayList<HandshakeInterceptor>(
+				List<HandshakeInterceptor> interceptorsToSet = new ArrayList<>(
 						handshakeInterceptors.size() + 1);
 				interceptorsToSet.add(new CsrfTokenHandshakeInterceptor());
 				interceptorsToSet.addAll(handshakeInterceptors);
@@ -267,7 +267,7 @@ public abstract class AbstractSecurityWebSocketMessageBrokerConfigurer extends
 				WebSocketHttpRequestHandler handler = (WebSocketHttpRequestHandler) object;
 				List<HandshakeInterceptor> handshakeInterceptors = handler
 						.getHandshakeInterceptors();
-				List<HandshakeInterceptor> interceptorsToSet = new ArrayList<HandshakeInterceptor>(
+				List<HandshakeInterceptor> interceptorsToSet = new ArrayList<>(
 						handshakeInterceptors.size() + 1);
 				interceptorsToSet.add(new CsrfTokenHandshakeInterceptor());
 				interceptorsToSet.addAll(handshakeInterceptors);

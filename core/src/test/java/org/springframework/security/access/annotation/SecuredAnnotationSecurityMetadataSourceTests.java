@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -137,8 +137,6 @@ public class SecuredAnnotationSecurityMetadataSourceTests {
 		Collection<ConfigAttribute> attrs = this.mds.findAttributes(method,
 				BusinessService.class);
 
-		assertThat(attrs).isNotNull();
-
 		// expect 2 attributes
 		assertThat(attrs).hasSize(2);
 
@@ -147,7 +145,7 @@ public class SecuredAnnotationSecurityMetadataSourceTests {
 
 		// should have 2 SecurityConfigs
 		for (ConfigAttribute sc : attrs) {
-			assertThat(sc instanceof SecurityConfig).isTrue();
+			assertThat(sc).isInstanceOf(SecurityConfig.class);
 
 			if (sc.getAttribute().equals("ROLE_USER")) {
 				user = true;
@@ -158,18 +156,17 @@ public class SecuredAnnotationSecurityMetadataSourceTests {
 		}
 
 		// expect to have ROLE_USER and ROLE_ADMIN
-		assertThat(user && admin).isTrue();
+		assertThat(user).isEqualTo(admin).isTrue();
 	}
 
 	// SEC-1491
 	@Test
-	public void customAnnotationAttributesAreFound() throws Exception {
+	public void customAnnotationAttributesAreFound() {
 		SecuredAnnotationSecurityMetadataSource mds = new SecuredAnnotationSecurityMetadataSource(
 				new CustomSecurityAnnotationMetadataExtractor());
 		Collection<ConfigAttribute> attrs = mds.findAttributes(
 				CustomAnnotatedService.class);
-		assertThat(attrs).hasSize(1);
-		assertThat(attrs.toArray()[0]).isEqualTo(SecurityEnum.ADMIN);
+		assertThat(attrs).containsOnly(SecurityEnum.ADMIN);
 	}
 
 	@Test
@@ -181,8 +178,8 @@ public class SecuredAnnotationSecurityMetadataSourceTests {
 		ConfigAttribute[] attrs = mds.getAttributes(annotatedAtClassLevel).toArray(
 				new ConfigAttribute[0]);
 
-		assertThat(attrs.length).isEqualTo(1);
-		assertThat(attrs[0].getAttribute()).isEqualTo("CUSTOM");
+		assertThat(attrs).hasSize(1);
+		assertThat(attrs).extracting("attribute").containsOnly("CUSTOM");
 	}
 
 	@Test
@@ -194,8 +191,8 @@ public class SecuredAnnotationSecurityMetadataSourceTests {
 		ConfigAttribute[] attrs = mds.getAttributes(annotatedAtInterfaceLevel).toArray(
 				new ConfigAttribute[0]);
 
-		assertThat(attrs.length).isEqualTo(1);
-		assertThat(attrs[0].getAttribute()).isEqualTo("CUSTOM");
+		assertThat(attrs).hasSize(1);
+		assertThat(attrs).extracting("attribute").containsOnly("CUSTOM");
 	}
 
 	@Test
@@ -206,22 +203,22 @@ public class SecuredAnnotationSecurityMetadataSourceTests {
 		ConfigAttribute[] attrs = mds.getAttributes(annotatedAtMethodLevel).toArray(
 				new ConfigAttribute[0]);
 
-		assertThat(attrs.length).isEqualTo(1);
-		assertThat(attrs[0].getAttribute()).isEqualTo("CUSTOM");
+		assertThat(attrs).hasSize(1);
+		assertThat(attrs).extracting("attribute").containsOnly("CUSTOM");
 	}
 
 	@Test
 	public void proxyFactoryInterfaceAttributesFound() throws Exception {
 		MockMethodInvocation mi = MethodInvocationFactory.createSec2150MethodInvocation();
 		Collection<ConfigAttribute> attributes = mds.getAttributes(mi);
-		assertThat(attributes.size()).isEqualTo(1);
+		assertThat(attributes).hasSize(1);
 		assertThat(attributes).extracting("attribute").containsOnly("ROLE_PERSON");
 	}
 
 	// Inner classes
 	class Department extends Entity {
 
-		public Department(String name) {
+		Department(String name) {
 			super(name);
 		}
 	}
@@ -251,7 +248,7 @@ public class SecuredAnnotationSecurityMetadataSourceTests {
 	class CustomAnnotatedServiceImpl implements CustomAnnotatedService {
 	}
 
-	enum SecurityEnum implements ConfigAttribute,GrantedAuthority {
+	enum SecurityEnum implements ConfigAttribute, GrantedAuthority {
 		ADMIN, USER;
 
 		public String getAttribute() {
@@ -288,15 +285,15 @@ public class SecuredAnnotationSecurityMetadataSourceTests {
 	public @interface AnnotatedAnnotation {
 	}
 
-	public static interface ReturnVoid {
+	public interface ReturnVoid {
 
-		public void doSomething(List<?> param);
+		void doSomething(List<?> param);
 	}
 
 	@AnnotatedAnnotation
-	public static interface ReturnVoid2 {
+	public interface ReturnVoid2 {
 
-		public void doSomething(List<?> param);
+		void doSomething(List<?> param);
 	}
 
 	@AnnotatedAnnotation

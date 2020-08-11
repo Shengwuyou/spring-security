@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,8 +52,8 @@ public class DefaultFilterChainValidator implements FilterChainProxy.FilterChain
 			checkFilterStack(filterChain.getFilters());
 		}
 
-		checkPathOrder(new ArrayList<SecurityFilterChain>(fcp.getFilterChains()));
-		checkForDuplicateMatchers(new ArrayList<SecurityFilterChain>(
+		checkPathOrder(new ArrayList<>(fcp.getFilterChains()));
+		checkForDuplicateMatchers(new ArrayList<>(
 				fcp.getFilterChains()));
 	}
 

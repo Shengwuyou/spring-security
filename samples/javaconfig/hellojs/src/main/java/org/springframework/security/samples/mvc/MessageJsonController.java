@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@
 package org.springframework.security.samples.mvc;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,7 +49,7 @@ public class MessageJsonController {
 	@RequestMapping
 	public ResponseEntity<Iterable<Message>> list() {
 		Iterable<Message> messages = messageRepository.findAll();
-		return new ResponseEntity<Iterable<Message>>(messages, HttpStatus.OK);
+		return new ResponseEntity<>(messages, HttpStatus.OK);
 	}
 
 	@RequestMapping("{id}")
@@ -61,13 +62,14 @@ public class MessageJsonController {
 	public ResponseEntity<?> create(@Valid @RequestBody Message message,
 			BindingResult result, RedirectAttributes redirect) {
 		if (result.hasErrors()) {
-			List<String> errors = new ArrayList<String>(result.getErrorCount());
+			List<String> errors = new ArrayList<>(result.getErrorCount());
 			for (ObjectError r : result.getAllErrors()) {
 				errors.add(r.getDefaultMessage());
 			}
-			return new ResponseEntity<List<String>>(errors, HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
 		}
+		message.setCreated(Calendar.getInstance());
 		message = messageRepository.save(message);
-		return new ResponseEntity<Message>(message, HttpStatus.OK);
+		return new ResponseEntity<>(message, HttpStatus.OK);
 	}
 }

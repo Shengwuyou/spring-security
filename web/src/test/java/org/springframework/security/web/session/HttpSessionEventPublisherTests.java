@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -72,6 +72,11 @@ public class HttpSessionEventPublisherTests {
 		assertThat(listener.getDestroyedEvent()).isNotNull();
 		assertThat(listener.getCreatedEvent()).isNull();
 		assertThat(listener.getDestroyedEvent().getSession()).isEqualTo(session);
+
+		publisher.sessionIdChanged(event, "oldSessionId");
+		assertThat(listener.getSessionIdChangedEvent()).isNotNull();
+		assertThat(listener.getSessionIdChangedEvent().getOldSessionId()).isEqualTo("oldSessionId");
+		listener.setSessionIdChangedEvent(null);
 	}
 
 	@Test
@@ -108,6 +113,11 @@ public class HttpSessionEventPublisherTests {
 		assertThat(listener.getDestroyedEvent()).isNotNull();
 		assertThat(listener.getCreatedEvent()).isNull();
 		assertThat(listener.getDestroyedEvent().getSession()).isEqualTo(session);
+
+		publisher.sessionIdChanged(event, "oldSessionId");
+		assertThat(listener.getSessionIdChangedEvent()).isNotNull();
+		assertThat(listener.getSessionIdChangedEvent().getOldSessionId()).isEqualTo("oldSessionId");
+		listener.setSessionIdChangedEvent(null);
 	}
 
 	// SEC-2599
@@ -130,5 +140,15 @@ public class HttpSessionEventPublisherTests {
 		HttpSessionEvent event = new HttpSessionEvent(session);
 
 		publisher.sessionDestroyed(event);
+	}
+
+	@Test(expected = IllegalStateException.class)
+	public void sessionIdChangeNullApplicationContext() {
+		HttpSessionEventPublisher publisher = new HttpSessionEventPublisher();
+		MockServletContext servletContext = new MockServletContext();
+		MockHttpSession session = new MockHttpSession(servletContext);
+		HttpSessionEvent event = new HttpSessionEvent(session);
+
+		publisher.sessionIdChanged(event, "oldSessionId");
 	}
 }

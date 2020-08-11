@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -55,7 +55,7 @@ public class CasAuthenticationTokenMixinTests {
 
 	public static final String AUTHORITIES_SET_JSON = "[\"java.util.Collections$UnmodifiableSet\", [" + AUTHORITY_JSON + "]]";
 
-	public static final String AUTHORITIES_ARRAYLIST_JSON = "[\"java.util.ArrayList\", [" + AUTHORITY_JSON + "]]";
+	public static final String AUTHORITIES_ARRAYLIST_JSON = "[\"java.util.Collections$UnmodifiableRandomAccessList\", [" + AUTHORITY_JSON + "]]";
 
 	// @formatter:off
 	public static final String USER_JSON = "{"
@@ -124,11 +124,11 @@ public class CasAuthenticationTokenMixinTests {
 	@Test
 	public void deserializeCasAuthenticationTestAfterEraseCredentialInvoked() throws Exception {
 		CasAuthenticationToken token = mapper.readValue(CAS_TOKEN_CLEARED_JSON, CasAuthenticationToken.class);
-		assertThat(((UserDetails)token.getPrincipal()).getPassword()).isNull();
+		assertThat(((UserDetails) token.getPrincipal()).getPassword()).isNull();
 	}
 
 	@Test
-	public void deserializeCasAuthenticationTest() throws IOException, JSONException {
+	public void deserializeCasAuthenticationTest() throws IOException {
 		CasAuthenticationToken token = mapper.readValue(CAS_TOKEN_JSON, CasAuthenticationToken.class);
 		assertThat(token).isNotNull();
 		assertThat(token.getPrincipal()).isNotNull().isInstanceOf(User.class);
@@ -137,7 +137,9 @@ public class CasAuthenticationTokenMixinTests {
 		assertThat(token.getUserDetails()).isNotNull().isInstanceOf(User.class);
 		assertThat(token.getAssertion()).isNotNull().isInstanceOf(AssertionImpl.class);
 		assertThat(token.getKeyHash()).isEqualTo(KEY.hashCode());
-		assertThat(token.getUserDetails().getAuthorities()).hasSize(1).contains(new SimpleGrantedAuthority("ROLE_USER"));
+		assertThat(token.getUserDetails().getAuthorities())
+			.extracting(GrantedAuthority::getAuthority)
+			.containsOnly("ROLE_USER");
 		assertThat(token.getAssertion().getAuthenticationDate()).isEqualTo(START_DATE);
 		assertThat(token.getAssertion().getValidFromDate()).isEqualTo(START_DATE);
 		assertThat(token.getAssertion().getValidUntilDate()).isEqualTo(END_DATE);

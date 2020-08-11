@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,19 +15,20 @@
  */
 package org.springframework.security.config.ldap;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.security.config.BeanIds;
 import org.springframework.security.config.util.InMemoryXmlApplicationContext;
 import org.springframework.security.ldap.DefaultSpringSecurityContextSource;
 import org.springframework.security.ldap.server.ApacheDSContainer;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Luke Taylor
@@ -47,7 +48,7 @@ public class LdapServerBeanDefinitionParserTests {
 	@Test
 	public void embeddedServerCreationContainsExpectedContextSourceAndData() {
 		appCtx = new InMemoryXmlApplicationContext(
-				"<ldap-server ldif='classpath:test-server.ldif'/>");
+				"<ldap-server ldif='classpath:test-server.ldif' port='0'/>");
 
 		DefaultSpringSecurityContextSource contextSource = (DefaultSpringSecurityContextSource) appCtx
 				.getBean(BeanIds.CONTEXT_SOURCE);
@@ -82,7 +83,7 @@ public class LdapServerBeanDefinitionParserTests {
 	@Test
 	public void loadingSpecificLdifFileIsSuccessful() {
 		appCtx = new InMemoryXmlApplicationContext(
-				"<ldap-server ldif='classpath*:test-server2.xldif' root='dc=monkeymachine,dc=co,dc=uk' />");
+				"<ldap-server ldif='classpath*:test-server2.xldif' root='dc=monkeymachine,dc=co,dc=uk' port='0'/>");
 		DefaultSpringSecurityContextSource contextSource = (DefaultSpringSecurityContextSource) appCtx
 				.getBean(BeanIds.CONTEXT_SOURCE);
 
@@ -99,17 +100,8 @@ public class LdapServerBeanDefinitionParserTests {
 	}
 
 	private int getDefaultPort() throws IOException {
-		ServerSocket server = null;
-		try {
-			server = new ServerSocket(0);
+		try (ServerSocket server = new ServerSocket(0)) {
 			return server.getLocalPort();
-		}
-		finally {
-			try {
-				server.close();
-			}
-			catch (IOException e) {
-			}
 		}
 	}
 }

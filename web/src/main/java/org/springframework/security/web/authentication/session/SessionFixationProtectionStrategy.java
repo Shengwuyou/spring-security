@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,14 @@ package org.springframework.security.web.authentication.session;
 
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 /**
- * The default implementation of {@link SessionAuthenticationStrategy} when using &lt;
- * Servlet 3.1.
+ * Uses {@code HttpServletRequest.invalidate()} to protect against session fixation
+ * attacks.
  * <p>
  * Creates a new session for the newly authenticated user if they already have a session
  * (as a defence against session-fixation protection attacks), and copies their session
@@ -91,6 +90,7 @@ public class SessionFixationProtectionStrategy extends
 		}
 
 		Map<String, Object> attributesToMigrate = extractAttributes(session);
+		int maxInactiveIntervalToMigrate = session.getMaxInactiveInterval();
 
 		session.invalidate();
 		session = request.getSession(true); // we now have a new session
@@ -100,6 +100,9 @@ public class SessionFixationProtectionStrategy extends
 		}
 
 		transferAttributes(attributesToMigrate, session);
+		if (migrateSessionAttributes) {
+			session.setMaxInactiveInterval(maxInactiveIntervalToMigrate);
+		}
 		return session;
 	}
 
@@ -118,7 +121,7 @@ public class SessionFixationProtectionStrategy extends
 
 	@SuppressWarnings("unchecked")
 	private HashMap<String, Object> createMigratedAttributeMap(HttpSession session) {
-		HashMap<String, Object> attributesToMigrate = new HashMap<String, Object>();
+		HashMap<String, Object> attributesToMigrate = new HashMap<>();
 
 		Enumeration enumer = session.getAttributeNames();
 

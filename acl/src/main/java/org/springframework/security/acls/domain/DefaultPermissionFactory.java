@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,8 +38,8 @@ import org.springframework.util.Assert;
  * @since 2.0.3
  */
 public class DefaultPermissionFactory implements PermissionFactory {
-	private final Map<Integer, Permission> registeredPermissionsByInteger = new HashMap<Integer, Permission>();
-	private final Map<String, Permission> registeredPermissionsByName = new HashMap<String, Permission>();
+	private final Map<Integer, Permission> registeredPermissionsByInteger = new HashMap<>();
+	private final Map<String, Permission> registeredPermissionsByName = new HashMap<>();
 
 	/**
 	 * Registers the <tt>Permission</tt> fields from the <tt>BasePermission</tt> class.
@@ -100,13 +100,13 @@ public class DefaultPermissionFactory implements PermissionFactory {
 		Assert.notNull(perm, "Permission required");
 		Assert.hasText(permissionName, "Permission name required");
 
-		Integer mask = Integer.valueOf(perm.getMask());
+		Integer mask = perm.getMask();
 
 		// Ensure no existing Permission uses this integer or code
 		Assert.isTrue(!registeredPermissionsByInteger.containsKey(mask),
-				"An existing Permission already provides mask " + mask);
+				() -> "An existing Permission already provides mask " + mask);
 		Assert.isTrue(!registeredPermissionsByName.containsKey(permissionName),
-				"An existing Permission already provides name '" + permissionName + "'");
+				() -> "An existing Permission already provides name '" + permissionName + "'");
 
 		// Register the new Permission
 		registeredPermissionsByInteger.put(mask, perm);
@@ -114,10 +114,10 @@ public class DefaultPermissionFactory implements PermissionFactory {
 	}
 
 	public Permission buildFromMask(int mask) {
-		if (registeredPermissionsByInteger.containsKey(Integer.valueOf(mask))) {
+		if (registeredPermissionsByInteger.containsKey(mask)) {
 			// The requested mask has an exact match against a statically-defined
 			// Permission, so return it
-			return registeredPermissionsByInteger.get(Integer.valueOf(mask));
+			return registeredPermissionsByInteger.get(mask);
 		}
 
 		// To get this far, we have to use a CumulativePermission
@@ -127,8 +127,7 @@ public class DefaultPermissionFactory implements PermissionFactory {
 			int permissionToCheck = 1 << i;
 
 			if ((mask & permissionToCheck) == permissionToCheck) {
-				Permission p = registeredPermissionsByInteger.get(Integer
-						.valueOf(permissionToCheck));
+				Permission p = registeredPermissionsByInteger.get(permissionToCheck);
 
 				if (p == null) {
 					throw new IllegalStateException("Mask '" + permissionToCheck
@@ -156,7 +155,7 @@ public class DefaultPermissionFactory implements PermissionFactory {
 			return Collections.emptyList();
 		}
 
-		List<Permission> permissions = new ArrayList<Permission>(names.size());
+		List<Permission> permissions = new ArrayList<>(names.size());
 
 		for (String name : names) {
 			permissions.add(buildFromName(name));

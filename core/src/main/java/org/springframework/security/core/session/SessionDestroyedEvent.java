@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,6 @@
  */
 package org.springframework.security.core.session;
 
-import org.springframework.context.ApplicationEvent;
 import org.springframework.security.core.context.SecurityContext;
 
 import java.util.*;
@@ -27,7 +26,7 @@ import java.util.*;
  * @author Luke Taylor
  * @since 3.0
  */
-public abstract class SessionDestroyedEvent extends ApplicationEvent {
+public abstract class SessionDestroyedEvent extends AbstractSessionEvent {
 
 	public SessionDestroyedEvent(Object source) {
 		super(source);

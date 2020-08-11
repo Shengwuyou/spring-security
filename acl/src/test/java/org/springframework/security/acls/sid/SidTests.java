@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,17 +22,22 @@ import org.junit.Test;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.PrincipalSid;
 import org.springframework.security.acls.model.Sid;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+
+import java.util.Collection;
+import java.util.Collections;
 
 public class SidTests {
 
 	// ~ Methods
 	// ========================================================================================================
 	@Test
-	public void testPrincipalSidConstructorsRequiredFields() throws Exception {
+	public void testPrincipalSidConstructorsRequiredFields() {
 		// Check one String-argument constructor
 		try {
 			String string = null;
@@ -77,7 +82,7 @@ public class SidTests {
 	}
 
 	@Test
-	public void testGrantedAuthoritySidConstructorsRequiredFields() throws Exception {
+	public void testGrantedAuthoritySidConstructorsRequiredFields() {
 		// Check one String-argument constructor
 		try {
 			String string = null;
@@ -134,7 +139,7 @@ public class SidTests {
 	}
 
 	@Test
-	public void testPrincipalSidEquals() throws Exception {
+	public void testPrincipalSidEquals() {
 		Authentication authentication = new TestingAuthenticationToken("johndoe",
 				"password");
 		Sid principalSid = new PrincipalSid(authentication);
@@ -152,7 +157,7 @@ public class SidTests {
 	}
 
 	@Test
-	public void testGrantedAuthoritySidEquals() throws Exception {
+	public void testGrantedAuthoritySidEquals() {
 		GrantedAuthority ga = new SimpleGrantedAuthority("ROLE_TEST");
 		Sid gaSid = new GrantedAuthoritySid(ga);
 
@@ -169,7 +174,7 @@ public class SidTests {
 	}
 
 	@Test
-	public void testPrincipalSidHashCode() throws Exception {
+	public void testPrincipalSidHashCode() {
 		Authentication authentication = new TestingAuthenticationToken("johndoe",
 				"password");
 		Sid principalSid = new PrincipalSid(authentication);
@@ -184,7 +189,7 @@ public class SidTests {
 	}
 
 	@Test
-	public void testGrantedAuthoritySidHashCode() throws Exception {
+	public void testGrantedAuthoritySidHashCode() {
 		GrantedAuthority ga = new SimpleGrantedAuthority("ROLE_TEST");
 		Sid gaSid = new GrantedAuthoritySid(ga);
 
@@ -198,7 +203,7 @@ public class SidTests {
 	}
 
 	@Test
-	public void testGetters() throws Exception {
+	public void testGetters() {
 		Authentication authentication = new TestingAuthenticationToken("johndoe",
 				"password");
 		PrincipalSid principalSid = new PrincipalSid(authentication);
@@ -210,5 +215,66 @@ public class SidTests {
 
 		assertThat("ROLE_TEST".equals(gaSid.getGrantedAuthority())).isTrue();
 		assertThat("ROLE_TEST2".equals(gaSid.getGrantedAuthority())).isFalse();
+	}
+
+	@Test
+	public void getPrincipalWhenPrincipalInstanceOfUserDetailsThenReturnsUsername() {
+		User user = new User("user", "password", Collections.singletonList(new SimpleGrantedAuthority("ROLE_TEST")));
+		Authentication authentication = new TestingAuthenticationToken(user, "password");
+		PrincipalSid principalSid = new PrincipalSid(authentication);
+
+		assertThat("user").isEqualTo(principalSid.getPrincipal());
+	}
+
+	@Test
+	public void getPrincipalWhenPrincipalNotInstanceOfUserDetailsThenReturnsPrincipalName() {
+		Authentication authentication = new TestingAuthenticationToken("token", "password");
+		PrincipalSid principalSid = new PrincipalSid(authentication);
+
+		assertThat("token").isEqualTo(principalSid.getPrincipal());
+	}
+
+	@Test
+	public void getPrincipalWhenCustomAuthenticationPrincipalThenReturnsPrincipalName() {
+		Authentication authentication = new CustomAuthenticationToken(new CustomToken("token"), null);
+		PrincipalSid principalSid = new PrincipalSid(authentication);
+
+		assertThat("token").isEqualTo(principalSid.getPrincipal());
+	}
+
+	static class CustomAuthenticationToken extends AbstractAuthenticationToken {
+		private CustomToken principal;
+
+		CustomAuthenticationToken(CustomToken principal, Collection<GrantedAuthority> authorities) {
+			super(authorities);
+			this.principal = principal;
+		}
+
+		@Override
+		public Object getCredentials() {
+			return null;
+		}
+
+		@Override
+		public CustomToken getPrincipal() {
+			return this.principal;
+		}
+
+		@Override
+		public String getName() {
+			return principal.getName();
+		}
+	}
+
+	static class CustomToken {
+		private String name;
+
+		CustomToken(String name) {
+			this.name = name;
+		}
+
+		String getName() {
+			return name;
+		}
 	}
 }

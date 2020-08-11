@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,17 +15,28 @@
  */
 package org.springframework.security.config.http;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.w3c.dom.Element;
+
 import org.springframework.beans.BeanMetadataElement;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanReference;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.ListFactoryBean;
 import org.springframework.beans.factory.config.MethodInvokingFactoryBean;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
+import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParser;
@@ -33,6 +44,7 @@ import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.core.OrderComparator;
 import org.springframework.core.Ordered;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.BeanIds;
 import org.springframework.security.config.Elements;
@@ -43,9 +55,6 @@ import org.springframework.security.web.PortResolverImpl;
 import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
-import org.w3c.dom.Element;
-
-import java.util.*;
 
 /**
  * Sets up HTTP security: filter stack and protected URLs.
@@ -86,6 +95,7 @@ public class HttpSecurityBeanDefinitionParser implements BeanDefinitionParser {
 	 * "universal" match pattern mapped to the list of beans which have been parsed here.
 	 */
 	@SuppressWarnings({ "unchecked" })
+	@Override
 	public BeanDefinition parse(Element element, ParserContext pc) {
 		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(
 				element.getTagName(), pc.extractSource(element));
@@ -137,7 +147,7 @@ public class HttpSecurityBeanDefinitionParser implements BeanDefinitionParser {
 		final BeanReference portMapper = createPortMapper(element, pc);
 		final BeanReference portResolver = createPortResolver(portMapper, pc);
 
-		ManagedList<BeanReference> authenticationProviders = new ManagedList<BeanReference>();
+		ManagedList<BeanReference> authenticationProviders = new ManagedList<>();
 		BeanReference authenticationManager = createAuthenticationManager(element, pc,
 				authenticationProviders);
 
@@ -154,20 +164,21 @@ public class HttpSecurityBeanDefinitionParser implements BeanDefinitionParser {
 		httpBldr.setLogoutHandlers(authBldr.getLogoutHandlers());
 		httpBldr.setEntryPoint(authBldr.getEntryPointBean());
 		httpBldr.setAccessDeniedHandler(authBldr.getAccessDeniedHandlerBean());
+		httpBldr.setCsrfIgnoreRequestMatchers(authBldr.getCsrfIgnoreRequestMatchers());
 
 		authenticationProviders.addAll(authBldr.getProviders());
 
-		List<OrderDecorator> unorderedFilterChain = new ArrayList<OrderDecorator>();
+		List<OrderDecorator> unorderedFilterChain = new ArrayList<>();
 
 		unorderedFilterChain.addAll(httpBldr.getFilters());
 		unorderedFilterChain.addAll(authBldr.getFilters());
 		unorderedFilterChain.addAll(buildCustomFilterList(element, pc));
 
-		Collections.sort(unorderedFilterChain, new OrderComparator());
+		unorderedFilterChain.sort(new OrderComparator());
 		checkFilterChainOrder(unorderedFilterChain, pc, pc.extractSource(element));
 
 		// The list of filter beans
-		List<BeanMetadataElement> filterChain = new ManagedList<BeanMetadataElement>();
+		List<BeanMetadataElement> filterChain = new ManagedList<>();
 
 		for (OrderDecorator od : unorderedFilterChain) {
 			filterChain.add(od.bean);
@@ -293,6 +304,8 @@ public class HttpSecurityBeanDefinitionParser implements BeanDefinitionParser {
 					clearCredentials);
 		}
 
+		// gh-6009
+		authManager.addPropertyValue("authenticationEventPublisher", new RootBeanDefinition(DefaultAuthenticationEventPublisher.class));
 		authManager.getRawBeanDefinition().setSource(pc.extractSource(element));
 		BeanDefinition authMgrBean = authManager.getBeanDefinition();
 		String id = pc.getReaderContext().generateBeanName(authMgrBean);
@@ -329,7 +342,7 @@ public class HttpSecurityBeanDefinitionParser implements BeanDefinitionParser {
 	List<OrderDecorator> buildCustomFilterList(Element element, ParserContext pc) {
 		List<Element> customFilterElts = DomUtils.getChildElementsByTagName(element,
 				Elements.CUSTOM_FILTER);
-		List<OrderDecorator> customFilters = new ArrayList<OrderDecorator>();
+		List<OrderDecorator> customFilters = new ArrayList<>();
 
 		final String ATT_AFTER = "after";
 		final String ATT_BEFORE = "before";
@@ -385,7 +398,8 @@ public class HttpSecurityBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	static void registerFilterChainProxyIfNecessary(ParserContext pc, Object source) {
-		if (pc.getRegistry().containsBeanDefinition(BeanIds.FILTER_CHAIN_PROXY)) {
+		BeanDefinitionRegistry registry = pc.getRegistry();
+		if (registry.containsBeanDefinition(BeanIds.FILTER_CHAIN_PROXY)) {
 			return;
 		}
 		// Not already registered, so register the list of filter chains and the
@@ -404,30 +418,68 @@ public class HttpSecurityBeanDefinitionParser implements BeanDefinitionParser {
 		BeanDefinition fcpBean = fcpBldr.getBeanDefinition();
 		pc.registerBeanComponent(new BeanComponentDefinition(fcpBean,
 				BeanIds.FILTER_CHAIN_PROXY));
-		pc.getRegistry().registerAlias(BeanIds.FILTER_CHAIN_PROXY,
+		registry.registerAlias(BeanIds.FILTER_CHAIN_PROXY,
 				BeanIds.SPRING_SECURITY_FILTER_CHAIN);
+
+		BeanDefinitionBuilder requestRejected = BeanDefinitionBuilder.rootBeanDefinition(RequestRejectedHandlerPostProcessor.class);
+		requestRejected.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
+		requestRejected.addConstructorArgValue("requestRejectedHandler");
+		requestRejected.addConstructorArgValue(BeanIds.FILTER_CHAIN_PROXY);
+		requestRejected.addConstructorArgValue("requestRejectedHandler");
+		AbstractBeanDefinition requestRejectedBean = requestRejected.getBeanDefinition();
+		String requestRejectedPostProcessorName = pc.getReaderContext().generateBeanName(requestRejectedBean);
+		registry.registerBeanDefinition(requestRejectedPostProcessorName, requestRejectedBean);
 	}
 
+}
+
+class RequestRejectedHandlerPostProcessor implements BeanDefinitionRegistryPostProcessor {
+	private final String beanName;
+
+	private final String targetBeanName;
+
+	private final String targetPropertyName;
+
+	RequestRejectedHandlerPostProcessor(String beanName, String targetBeanName, String targetPropertyName) {
+		this.beanName = beanName;
+		this.targetBeanName = targetBeanName;
+		this.targetPropertyName = targetPropertyName;
+	}
+
+	@Override
+	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
+		if (registry.containsBeanDefinition(this.beanName)) {
+			BeanDefinition beanDefinition = registry.getBeanDefinition(this.targetBeanName);
+			beanDefinition.getPropertyValues().add(this.targetPropertyName, new RuntimeBeanReference(this.beanName));
+		}
+	}
+
+	@Override
+	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+
+	}
 }
 
 class OrderDecorator implements Ordered {
 	final BeanMetadataElement bean;
 	final int order;
 
-	public OrderDecorator(BeanMetadataElement bean, SecurityFilters filterOrder) {
+	OrderDecorator(BeanMetadataElement bean, SecurityFilters filterOrder) {
 		this.bean = bean;
 		this.order = filterOrder.getOrder();
 	}
 
-	public OrderDecorator(BeanMetadataElement bean, int order) {
+	OrderDecorator(BeanMetadataElement bean, int order) {
 		this.bean = bean;
 		this.order = order;
 	}
 
+	@Override
 	public int getOrder() {
 		return order;
 	}
 
+	@Override
 	public String toString() {
 		return bean + ", order = " + order;
 	}
@@ -443,6 +495,7 @@ class OrderDecorator implements Ordered {
  * @author Rob Winch
  */
 final class ClearCredentialsMethodInvokingFactoryBean extends MethodInvokingFactoryBean {
+	@Override
 	public void afterPropertiesSet() throws Exception {
 		boolean isTargetProviderManager = getTargetObject() instanceof ProviderManager;
 		if (!isTargetProviderManager) {

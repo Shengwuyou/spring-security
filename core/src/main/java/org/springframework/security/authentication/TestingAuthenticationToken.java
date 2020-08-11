@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,10 @@
 
 package org.springframework.security.authentication;
 
-import java.util.List;
-
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
+
+import java.util.List;
 
 /**
  * An {@link org.springframework.security.core.Authentication} implementation that is
@@ -49,7 +49,6 @@ public class TestingAuthenticationToken extends AbstractAuthenticationToken {
 	public TestingAuthenticationToken(Object principal, Object credentials,
 			String... authorities) {
 		this(principal, credentials, AuthorityUtils.createAuthorityList(authorities));
-		setAuthenticated(true);
 	}
 
 	public TestingAuthenticationToken(Object principal, Object credentials,
@@ -57,6 +56,7 @@ public class TestingAuthenticationToken extends AbstractAuthenticationToken {
 		super(authorities);
 		this.principal = principal;
 		this.credentials = credentials;
+		setAuthenticated(true);
 	}
 
 	// ~ Methods

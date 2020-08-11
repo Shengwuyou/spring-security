@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,7 +29,12 @@ import javax.servlet.http.HttpServletRequest;
  *
  * @author Marten Deinum
  * @since 3.2
+ * @deprecated ALLOW-FROM is an obsolete directive that no longer works in modern browsers. Instead use
+ * Content-Security-Policy with the
+ * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors">frame-ancestors</a>
+ * directive.
  */
+@Deprecated
 abstract class AbstractRequestParameterAllowFromStrategy implements AllowFromStrategy {
 
 	private static final String DEFAULT_ORIGIN_REQUEST_PARAMETER = "x-frames-allow-from";

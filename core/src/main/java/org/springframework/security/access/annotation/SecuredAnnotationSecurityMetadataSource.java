@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -54,7 +54,7 @@ public class SecuredAnnotationSecurityMetadataSource extends
 		annotationType = (Class<? extends Annotation>) GenericTypeResolver
 				.resolveTypeArgument(annotationExtractor.getClass(),
 						AnnotationMetadataExtractor.class);
-		Assert.notNull(annotationType, annotationExtractor.getClass().getName()
+		Assert.notNull(annotationType, () -> annotationExtractor.getClass().getName()
 				+ " must supply a generic parameter for AnnotationMetadataExtractor");
 	}
 
@@ -84,7 +84,7 @@ class SecuredAnnotationMetadataExtractor implements AnnotationMetadataExtractor<
 
 	public Collection<ConfigAttribute> extractAttributes(Secured secured) {
 		String[] attributeTokens = secured.value();
-		List<ConfigAttribute> attributes = new ArrayList<ConfigAttribute>(
+		List<ConfigAttribute> attributes = new ArrayList<>(
 				attributeTokens.length);
 
 		for (String token : attributeTokens) {

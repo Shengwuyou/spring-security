@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,13 @@
 package org.springframework.security.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.powermock.api.mockito.PowerMockito.doReturn;
 import static org.powermock.api.mockito.PowerMockito.spy;
-import static org.powermock.api.mockito.PowerMockito.when;
 
 import org.apache.commons.logging.Log;
 import org.junit.After;
@@ -59,7 +59,7 @@ public class SpringSecurityCoreVersionTests {
 	}
 
 	@Test
-	public void springVersionIsUpToDate() throws Exception {
+	public void springVersionIsUpToDate() {
 		// Property is set by the build script
 		String springVersion = System.getProperty("springVersion");
 
@@ -67,7 +67,7 @@ public class SpringSecurityCoreVersionTests {
 	}
 
 	@Test
-	public void serialVersionMajorAndMinorVersionMatchBuildVersion() throws Exception {
+	public void serialVersionMajorAndMinorVersionMatchBuildVersion() {
 		String version = System.getProperty("springSecurityVersion");
 
 		// Strip patch version
@@ -85,8 +85,8 @@ public class SpringSecurityCoreVersionTests {
 		String version = "1";
 		spy(SpringSecurityCoreVersion.class);
 		spy(SpringVersion.class);
-		when(SpringSecurityCoreVersion.getVersion()).thenReturn(version);
-		when(SpringVersion.getVersion()).thenReturn(version);
+		doReturn(version).when(SpringSecurityCoreVersion.class, "getVersion");
+		doReturn(version).when(SpringVersion.class, "getVersion");
 
 		performChecks();
 
@@ -97,8 +97,8 @@ public class SpringSecurityCoreVersionTests {
 	public void noLoggingIfSpringVersionNull() throws Exception {
 		spy(SpringSecurityCoreVersion.class);
 		spy(SpringVersion.class);
-		when(SpringSecurityCoreVersion.getVersion()).thenReturn("1");
-		when(SpringVersion.getVersion()).thenReturn(null);
+		doReturn("1").when(SpringSecurityCoreVersion.class, "getVersion");
+		doReturn(null).when(SpringVersion.class, "getVersion");
 
 		performChecks();
 
@@ -109,8 +109,8 @@ public class SpringSecurityCoreVersionTests {
 	public void warnIfSpringVersionTooSmall() throws Exception {
 		spy(SpringSecurityCoreVersion.class);
 		spy(SpringVersion.class);
-		when(SpringSecurityCoreVersion.getVersion()).thenReturn("3");
-		when(SpringVersion.getVersion()).thenReturn("2");
+		doReturn("3").when(SpringSecurityCoreVersion.class, "getVersion");
+		doReturn("2").when(SpringVersion.class, "getVersion");
 
 		performChecks();
 
@@ -121,8 +121,8 @@ public class SpringSecurityCoreVersionTests {
 	public void noWarnIfSpringVersionLarger() throws Exception {
 		spy(SpringSecurityCoreVersion.class);
 		spy(SpringVersion.class);
-		when(SpringSecurityCoreVersion.getVersion()).thenReturn("4.0.0.RELEASE");
-		when(SpringVersion.getVersion()).thenReturn("4.0.0.RELEASE");
+		doReturn("4.0.0.RELEASE").when(SpringSecurityCoreVersion.class, "getVersion");
+		doReturn("4.0.0.RELEASE").when(SpringVersion.class, "getVersion");
 
 		performChecks();
 
@@ -135,8 +135,8 @@ public class SpringSecurityCoreVersionTests {
 		String minSpringVersion = "3.2.8.RELEASE";
 		spy(SpringSecurityCoreVersion.class);
 		spy(SpringVersion.class);
-		when(SpringSecurityCoreVersion.getVersion()).thenReturn("3.2.0.RELEASE");
-		when(SpringVersion.getVersion()).thenReturn("3.2.10.RELEASE");
+		doReturn("3.2.0.RELEASE").when(SpringSecurityCoreVersion.class, "getVersion");
+		doReturn("3.2.10.RELEASE").when(SpringVersion.class, "getVersion");
 
 		performChecks(minSpringVersion);
 
@@ -147,8 +147,8 @@ public class SpringSecurityCoreVersionTests {
 	public void noLoggingIfPropertySet() throws Exception {
 		spy(SpringSecurityCoreVersion.class);
 		spy(SpringVersion.class);
-		when(SpringSecurityCoreVersion.getVersion()).thenReturn("3");
-		when(SpringVersion.getVersion()).thenReturn("2");
+		doReturn("3").when(SpringSecurityCoreVersion.class, "getVersion");
+		doReturn("2").when(SpringVersion.class, "getVersion");
 		System.setProperty(getDisableChecksProperty(), Boolean.TRUE.toString());
 
 		performChecks();
@@ -156,7 +156,7 @@ public class SpringSecurityCoreVersionTests {
 		verifyZeroInteractions(logger);
 	}
 
-	private String getDisableChecksProperty() throws Exception {
+	private String getDisableChecksProperty() {
 		return SpringSecurityCoreVersion.class.getName().concat(".DISABLE_CHECKS");
 	}
 

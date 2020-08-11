@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,19 +16,26 @@
 
 package org.springframework.security.web;
 
-import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.web.util.UrlUtils;
 
 /**
@@ -48,11 +55,8 @@ import org.springframework.security.web.util.UrlUtils;
 public class FilterInvocation {
 	// ~ Static fields
 	// ==================================================================================================
-	static final FilterChain DUMMY_CHAIN = new FilterChain() {
-		public void doFilter(ServletRequest req, ServletResponse res)
-				throws IOException, ServletException {
-			throw new UnsupportedOperationException("Dummy filter chain");
-		}
+	static final FilterChain DUMMY_CHAIN = (req, res) -> {
+		throw new UnsupportedOperationException("Dummy filter chain");
 	};
 
 	// ~ Instance fields
@@ -162,8 +166,10 @@ class DummyRequest extends HttpServletRequestWrapper {
 	private String pathInfo;
 	private String queryString;
 	private String method;
+	private final HttpHeaders headers = new HttpHeaders();
+	private final Map<String, String[]> parameters = new LinkedHashMap<>();
 
-	public DummyRequest() {
+	DummyRequest() {
 		super(UNSUPPORTED_REQUEST);
 	}
 
@@ -228,10 +234,106 @@ class DummyRequest extends HttpServletRequestWrapper {
 	public void setQueryString(String queryString) {
 		this.queryString = queryString;
 	}
+
+	@Override
+	public String getServerName() {
+		return null;
+	}
+
+	@Override
+	public String getHeader(String name) {
+		return this.headers.getFirst(name);
+	}
+
+	@Override
+	public Enumeration<String> getHeaders(String name) {
+		return Collections.enumeration(this.headers.get(name));
+	}
+
+	@Override
+	public Enumeration<String> getHeaderNames() {
+		return Collections.enumeration(this.headers.keySet());
+	}
+
+	@Override
+	public int getIntHeader(String name) {
+		String value = this.headers.getFirst(name);
+		if (value == null ) {
+			return -1;
+		}
+		else {
+			return Integer.parseInt(value);
+		}
+	}
+
+	public void addHeader(String name, String value) {
+		this.headers.add(name, value);
+	}
+
+	@Override
+	public String getParameter(String name) {
+		String[] arr = this.parameters.get(name);
+		return (arr != null && arr.length > 0 ? arr[0] : null);
+	}
+
+	@Override
+	public Map<String, String[]> getParameterMap() {
+		return Collections.unmodifiableMap(this.parameters);
+	}
+
+	@Override
+	public Enumeration<String> getParameterNames() {
+		return Collections.enumeration(this.parameters.keySet());
+	}
+
+	@Override
+	public String[] getParameterValues(String name) {
+		return this.parameters.get(name);
+	}
+
+	public void setParameter(String name, String... values) {
+		this.parameters.put(name, values);
+	}
 }
 
 final class UnsupportedOperationExceptionInvocationHandler implements InvocationHandler {
+	private static final float JAVA_VERSION = Float.parseFloat(System.getProperty("java.class.version", "52"));
+
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+		if (method.isDefault()) {
+			return invokeDefaultMethod(proxy, method, args);
+		}
 		throw new UnsupportedOperationException(method + " is not supported");
+	}
+
+	private Object invokeDefaultMethod(Object proxy, Method method, Object[] args) throws Throwable {
+		if (isJdk8OrEarlier()) {
+			return invokeDefaultMethodForJdk8(proxy, method, args);
+		}
+		return MethodHandles.lookup()
+				.findSpecial(
+					method.getDeclaringClass(),
+					method.getName(),
+					MethodType.methodType(method.getReturnType(), new Class[0]),
+					method.getDeclaringClass()
+				)
+				.bindTo(proxy)
+				.invokeWithArguments(args);
+	}
+
+	private Object invokeDefaultMethodForJdk8(Object proxy, Method method, Object[] args) throws Throwable {
+		Constructor<Lookup> constructor = Lookup.class.getDeclaredConstructor(Class.class);
+		constructor.setAccessible(true);
+
+		Class<?> clazz = method.getDeclaringClass();
+		return constructor.newInstance(clazz)
+				.in(clazz)
+				.unreflectSpecial(method, clazz)
+				.bindTo(proxy)
+				.invokeWithArguments(args);
+	}
+
+	private boolean isJdk8OrEarlier() {
+		return JAVA_VERSION <= 52;
 	}
 }

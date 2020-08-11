@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -108,7 +108,7 @@ public class GlobalMethodSecurityBeanDefinitionParserTests {
 
 		// SEC-1213. Check the order
 		Advisor[] advisors = ((Advised) target).getAdvisors();
-		assertThat(advisors.length).isEqualTo(1);
+		assertThat(advisors).hasSize(1);
 		assertThat(((MethodSecurityMetadataSourceAdvisor) advisors[0]).getOrder()).isEqualTo(1001);
 	}
 
@@ -287,7 +287,7 @@ public class GlobalMethodSecurityBeanDefinitionParserTests {
 				+ AUTH_PROVIDER_XML);
 		SecurityContextHolder.getContext().setAuthentication(bob);
 		target = (BusinessService) appContext.getBean("target");
-		List<String> arg = new ArrayList<String>();
+		List<String> arg = new ArrayList<>();
 		arg.add("joe");
 		arg.add("bob");
 		arg.add("sam");
@@ -308,13 +308,13 @@ public class GlobalMethodSecurityBeanDefinitionParserTests {
 		target = (BusinessService) appContext.getBean("target");
 		Object[] arg = new String[] { "joe", "bob", "sam" };
 		Object[] result = target.methodReturningAnArray(arg);
-		assertThat(result.length).isEqualTo(1);
+		assertThat(result).hasSize(1);
 		assertThat(result[0]).isEqualTo("bob");
 	}
 
 	// SEC-1392
 	@Test
-	public void customPermissionEvaluatorIsSupported() throws Exception {
+	public void customPermissionEvaluatorIsSupported() {
 		setContext("<global-method-security pre-post-annotations='enabled'>"
 				+ "   <expression-handler ref='expressionHandler'/>"
 				+ "</global-method-security>"
@@ -328,7 +328,7 @@ public class GlobalMethodSecurityBeanDefinitionParserTests {
 	// SEC-1450
 	@Test(expected = AuthenticationException.class)
 	@SuppressWarnings("unchecked")
-	public void genericsAreMatchedByProtectPointcut() throws Exception {
+	public void genericsAreMatchedByProtectPointcut() {
 		setContext("<b:bean id='target' class='org.springframework.security.config.method.GlobalMethodSecurityBeanDefinitionParserTests$ConcreteFoo'/>"
 				+ "<global-method-security>"
 				+ "   <protect-pointcut expression='execution(* org..*Foo.foo(..))' access='ROLE_USER'/>"
@@ -340,7 +340,7 @@ public class GlobalMethodSecurityBeanDefinitionParserTests {
 	// SEC-1448
 	@Test
 	@SuppressWarnings("unchecked")
-	public void genericsMethodArgumentNamesAreResolved() throws Exception {
+	public void genericsMethodArgumentNamesAreResolved() {
 		setContext("<b:bean id='target' class='" + ConcreteFoo.class.getName() + "'/>"
 				+ "<global-method-security pre-post-annotations='enabled'/>"
 				+ AUTH_PROVIDER_XML);
@@ -368,7 +368,7 @@ public class GlobalMethodSecurityBeanDefinitionParserTests {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void supportsExternalMetadataSource() throws Exception {
+	public void supportsExternalMetadataSource() {
 		setContext("<b:bean id='target' class='"
 				+ ConcreteFoo.class.getName()
 				+ "'/>"
@@ -394,7 +394,7 @@ public class GlobalMethodSecurityBeanDefinitionParserTests {
 	}
 
 	@Test
-	public void supportsCustomAuthenticationManager() throws Exception {
+	public void supportsCustomAuthenticationManager() {
 		setContext("<b:bean id='target' class='"
 				+ ConcreteFoo.class.getName()
 				+ "'/>"

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -68,10 +68,10 @@ public final class AdminPermissionController implements MessageSourceAware {
 	 */
 	@RequestMapping(value = "/secure/adminPermission.htm", method = RequestMethod.GET)
 	public ModelAndView displayAdminPage(@RequestParam("contactId") int contactId) {
-		Contact contact = contactManager.getById(Long.valueOf(contactId));
+		Contact contact = contactManager.getById((long) contactId);
 		Acl acl = aclService.readAclById(new ObjectIdentityImpl(contact));
 
-		Map<String, Object> model = new HashMap<String, Object>();
+		Map<String, Object> model = new HashMap<>();
 		model.put("contact", contact);
 		model.put("acl", acl);
 
@@ -89,7 +89,7 @@ public final class AdminPermissionController implements MessageSourceAware {
 		AddPermission addPermission = new AddPermission();
 		addPermission.setContact(contact);
 
-		Map<String, Object> model = new HashMap<String, Object>();
+		Map<String, Object> model = new HashMap<>();
 		model.put("addPermission", addPermission);
 		model.put("recipients", listRecipients());
 		model.put("permissions", listPermissions());
@@ -151,7 +151,7 @@ public final class AdminPermissionController implements MessageSourceAware {
 
 		contactManager.deletePermission(contact, sidObject, permission);
 
-		Map<String, Object> model = new HashMap<String, Object>();
+		Map<String, Object> model = new HashMap<>();
 		model.put("contact", contact);
 		model.put("sid", sidObject);
 		model.put("permission", permission);
@@ -160,19 +160,19 @@ public final class AdminPermissionController implements MessageSourceAware {
 	}
 
 	private Map<Integer, String> listPermissions() {
-		Map<Integer, String> map = new LinkedHashMap<Integer, String>();
-		map.put(Integer.valueOf(BasePermission.ADMINISTRATION.getMask()),
+		Map<Integer, String> map = new LinkedHashMap<>();
+		map.put(BasePermission.ADMINISTRATION.getMask(),
 				messages.getMessage("select.administer", "Administer"));
-		map.put(Integer.valueOf(BasePermission.READ.getMask()),
+		map.put(BasePermission.READ.getMask(),
 				messages.getMessage("select.read", "Read"));
-		map.put(Integer.valueOf(BasePermission.DELETE.getMask()),
+		map.put(BasePermission.DELETE.getMask(),
 				messages.getMessage("select.delete", "Delete"));
 
 		return map;
 	}
 
 	private Map<String, String> listRecipients() {
-		Map<String, String> map = new LinkedHashMap<String, String>();
+		Map<String, String> map = new LinkedHashMap<>();
 		map.put("", messages.getMessage("select.pleaseSelect", "-- please select --"));
 
 		for (String recipient : contactManager.getAllRecipients()) {

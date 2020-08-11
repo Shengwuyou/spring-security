@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -110,13 +110,13 @@ public final class WebSocketMessageBrokerSecurityBeanDefinitionParser implements
 	/**
 	 * @param element
 	 * @param parserContext
-	 * @return
+	 * @return the {@link BeanDefinition}
 	 */
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		BeanDefinitionRegistry registry = parserContext.getRegistry();
 		XmlReaderContext context = parserContext.getReaderContext();
 
-		ManagedMap<BeanDefinition, String> matcherToExpression = new ManagedMap<BeanDefinition, String>();
+		ManagedMap<BeanDefinition, String> matcherToExpression = new ManagedMap<>();
 
 		String id = element.getAttribute(ID_ATTR);
 		Element expressionHandlerElt = DomUtils.getChildElementByTagName(element,
@@ -143,15 +143,15 @@ public final class WebSocketMessageBrokerSecurityBeanDefinitionParser implements
 				.rootBeanDefinition(ExpressionBasedMessageSecurityMetadataSourceFactory.class);
 		mds.setFactoryMethod("createExpressionMessageMetadataSource");
 		mds.addConstructorArgValue(matcherToExpression);
-		if(expressionHandlerDefined) {
+		if (expressionHandlerDefined) {
 			mds.addConstructorArgReference(expressionHandlerRef);
 		}
 
 		String mdsId = context.registerWithGeneratedName(mds.getBeanDefinition());
 
-		ManagedList<BeanDefinition> voters = new ManagedList<BeanDefinition>();
+		ManagedList<BeanDefinition> voters = new ManagedList<>();
 		BeanDefinitionBuilder messageExpressionVoterBldr = BeanDefinitionBuilder.rootBeanDefinition(MessageExpressionVoter.class);
-		if(expressionHandlerDefined) {
+		if (expressionHandlerDefined) {
 			messageExpressionVoterBldr.addPropertyReference("expressionHandler", expressionHandlerRef);
 		}
 		voters.add(messageExpressionVoterBldr.getBeanDefinition());
@@ -172,7 +172,7 @@ public final class WebSocketMessageBrokerSecurityBeanDefinitionParser implements
 		if (StringUtils.hasText(id)) {
 			registry.registerAlias(inSecurityInterceptorName, id);
 
-			if(!registry.containsBeanDefinition(PATH_MATCHER_BEAN_NAME)) {
+			if (!registry.containsBeanDefinition(PATH_MATCHER_BEAN_NAME)) {
 				registry.registerBeanDefinition(PATH_MATCHER_BEAN_NAME, new RootBeanDefinition(AntPathMatcher.class));
 			}
 		}
@@ -243,8 +243,7 @@ public final class WebSocketMessageBrokerSecurityBeanDefinitionParser implements
 
 		private final boolean sameOriginDisabled;
 
-		public MessageSecurityPostProcessor(String inboundSecurityInterceptorId,
-				boolean sameOriginDisabled) {
+		MessageSecurityPostProcessor(String inboundSecurityInterceptorId, boolean sameOriginDisabled) {
 			this.inboundSecurityInterceptorId = inboundSecurityInterceptorId;
 			this.sameOriginDisabled = sameOriginDisabled;
 		}
@@ -259,7 +258,7 @@ public final class WebSocketMessageBrokerSecurityBeanDefinitionParser implements
 						WEB_SOCKET_AMMH_CLASS_NAME.equals(beanClassName)) {
 					PropertyValue current = bd.getPropertyValues().getPropertyValue(
 							CUSTOM_ARG_RESOLVERS_PROP);
-					ManagedList<Object> argResolvers = new ManagedList<Object>();
+					ManagedList<Object> argResolvers = new ManagedList<>();
 					if (current != null) {
 						argResolvers.addAll((ManagedList<?>) current.getValue());
 					}
@@ -267,10 +266,10 @@ public final class WebSocketMessageBrokerSecurityBeanDefinitionParser implements
 							AuthenticationPrincipalArgumentResolver.class));
 					bd.getPropertyValues().add(CUSTOM_ARG_RESOLVERS_PROP, argResolvers);
 
-					if(!registry.containsBeanDefinition(PATH_MATCHER_BEAN_NAME)) {
+					if (!registry.containsBeanDefinition(PATH_MATCHER_BEAN_NAME)) {
 						PropertyValue pathMatcherProp = bd.getPropertyValues().getPropertyValue("pathMatcher");
 						Object pathMatcher = pathMatcherProp == null ? null : pathMatcherProp.getValue();
-						if(pathMatcher instanceof BeanReference) {
+						if (pathMatcher instanceof BeanReference) {
 							registry.registerAlias(((BeanReference) pathMatcher).getBeanName(), PATH_MATCHER_BEAN_NAME);
 						}
 					}
@@ -312,7 +311,7 @@ public final class WebSocketMessageBrokerSecurityBeanDefinitionParser implements
 
 			inboundChannel.getPropertyValues().add(INTERCEPTORS_PROP, interceptors);
 
-			if(!registry.containsBeanDefinition(PATH_MATCHER_BEAN_NAME)) {
+			if (!registry.containsBeanDefinition(PATH_MATCHER_BEAN_NAME)) {
 				registry.registerBeanDefinition(PATH_MATCHER_BEAN_NAME, new RootBeanDefinition(AntPathMatcher.class));
 			}
 		}
@@ -322,7 +321,7 @@ public final class WebSocketMessageBrokerSecurityBeanDefinitionParser implements
 				return;
 			}
 			String interceptorPropertyName = "handshakeInterceptors";
-			ManagedList<? super Object> interceptors = new ManagedList<Object>();
+			ManagedList<? super Object> interceptors = new ManagedList<>();
 			interceptors.add(new RootBeanDefinition(CsrfTokenHandshakeInterceptor.class));
 			interceptors.addAll((ManagedList<Object>) bd.getPropertyValues().get(
 					interceptorPropertyName));

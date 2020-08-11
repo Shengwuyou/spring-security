@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "https://www.springframework.org/dtd/spring-beans.dtd">
 
 <!--
   - Application context containing business beans.
@@ -17,7 +17,10 @@
 		<constructor-arg>
 		   <bean class="org.springframework.cache.ehcache.EhCacheFactoryBean">
 			  <property name="cacheManager">
-				<bean class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean"/>
+					<bean class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+						<!-- This context is used in two tests so accept existing cache manager as the context will be reused -->
+						<property name="acceptExisting" value="true"/>
+					</bean>
 			  </property>
 			  <property name="cacheName" value="aclCache"/>
 		   </bean>

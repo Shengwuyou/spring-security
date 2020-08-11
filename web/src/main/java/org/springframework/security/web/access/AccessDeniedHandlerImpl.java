@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.WebAttributes;
 
@@ -65,15 +66,15 @@ public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
 						accessDeniedException);
 
 				// Set the 403 status code.
-				response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+				response.setStatus(HttpStatus.FORBIDDEN.value());
 
 				// forward to error page.
 				RequestDispatcher dispatcher = request.getRequestDispatcher(errorPage);
 				dispatcher.forward(request, response);
 			}
 			else {
-				response.sendError(HttpServletResponse.SC_FORBIDDEN,
-						accessDeniedException.getMessage());
+				response.sendError(HttpStatus.FORBIDDEN.value(),
+					HttpStatus.FORBIDDEN.getReasonPhrase());
 			}
 		}
 	}

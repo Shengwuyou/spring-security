@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -68,6 +68,7 @@ public class WebAuthenticationDetails implements Serializable {
 	// ~ Methods
 	// ========================================================================================================
 
+	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof WebAuthenticationDetails) {
 			WebAuthenticationDetails rhs = (WebAuthenticationDetails) obj;
@@ -125,6 +126,7 @@ public class WebAuthenticationDetails implements Serializable {
 		return sessionId;
 	}
 
+	@Override
 	public int hashCode() {
 		int code = 7654;
 
@@ -139,6 +141,7 @@ public class WebAuthenticationDetails implements Serializable {
 		return code;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(super.toString()).append(": ");

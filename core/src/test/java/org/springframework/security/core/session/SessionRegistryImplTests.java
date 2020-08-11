@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,7 +40,7 @@ public class SessionRegistryImplTests {
 	// ========================================================================================================
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		sessionRegistry = new SessionRegistryImpl();
 	}
 
@@ -70,7 +70,34 @@ public class SessionRegistryImplTests {
 	}
 
 	@Test
-	public void testMultiplePrincipals() throws Exception {
+	public void sessionIdChangedEventRemovesOldSessionAndAddsANewSession() {
+		Object principal = "Some principal object";
+		final String sessionId = "zzzz";
+		final String newSessionId = "123";
+
+		// Register new Session
+		sessionRegistry.registerNewSession(sessionId, principal);
+
+		// De-register session via an ApplicationEvent
+		sessionRegistry.onApplicationEvent(new SessionIdChangedEvent("") {
+			@Override
+			public String getOldSessionId() {
+				return sessionId;
+			}
+
+			@Override
+			public String getNewSessionId() {
+				return newSessionId;
+			}
+		});
+
+		assertThat(sessionRegistry.getSessionInformation(sessionId)).isNull();
+		assertThat(sessionRegistry.getSessionInformation(newSessionId)).isNotNull();
+		assertThat(sessionRegistry.getSessionInformation(newSessionId).getPrincipal()).isEqualTo(principal);
+	}
+
+	@Test
+	public void testMultiplePrincipals() {
 		Object principal1 = "principal_1";
 		Object principal2 = "principal_2";
 		String sessionId1 = "1234567890";
@@ -125,7 +152,7 @@ public class SessionRegistryImplTests {
 	}
 
 	@Test
-	public void testTwoSessionsOnePrincipalExpiring() throws Exception {
+	public void testTwoSessionsOnePrincipalExpiring() {
 		Object principal = "Some principal object";
 		String sessionId1 = "1234567890";
 		String sessionId2 = "9876543210";
@@ -151,7 +178,7 @@ public class SessionRegistryImplTests {
 	}
 
 	@Test
-	public void testTwoSessionsOnePrincipalHandling() throws Exception {
+	public void testTwoSessionsOnePrincipalHandling() {
 		Object principal = "Some principal object";
 		String sessionId1 = "1234567890";
 		String sessionId2 = "9876543210";
@@ -180,8 +207,8 @@ public class SessionRegistryImplTests {
 	private boolean contains(String sessionId, Object principal) {
 		List<SessionInformation> info = sessionRegistry.getAllSessions(principal, false);
 
-		for (int i = 0; i < info.size(); i++) {
-			if (sessionId.equals(info.get(i).getSessionId())) {
+		for (SessionInformation sessionInformation : info) {
+			if (sessionId.equals(sessionInformation.getSessionId())) {
 				return true;
 			}
 		}

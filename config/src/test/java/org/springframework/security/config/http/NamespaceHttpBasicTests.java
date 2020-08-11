@@ -1,11 +1,11 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,7 +52,7 @@ public class NamespaceHttpBasicTests {
 
 	@Before
 	public void setup() {
-		this.request = new MockHttpServletRequest();
+		this.request = new MockHttpServletRequest("GET", "");
 		this.request.setMethod("GET");
 		this.response = new MockHttpServletResponse();
 		this.chain = new MockFilterChain();
@@ -92,6 +92,24 @@ public class NamespaceHttpBasicTests {
 		this.springSecurityFilterChain.doFilter(this.request, this.response, this.chain);
 
 		assertThat(this.response.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
+	}
+
+	// gh-4220
+	@Test
+	public void httpBasicUnauthorizedOnDefault() throws Exception {
+		// @formatter:off
+		loadContext("<http>\n" +
+			"		<intercept-url pattern=\"/**\" access=\"hasRole('USER')\" />\n" +
+			"		<http-basic />\n" +
+			"	</http>\n" +
+			"\n" +
+			"	<authentication-manager />");
+		// @formatter:on
+
+		this.springSecurityFilterChain.doFilter(this.request, this.response, this.chain);
+
+		assertThat(this.response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+		assertThat(this.response.getHeader("WWW-Authenticate")).isEqualTo("Basic realm=\"Realm\"");
 	}
 
 	private void loadContext(String context) {

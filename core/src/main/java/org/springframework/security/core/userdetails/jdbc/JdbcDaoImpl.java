@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,6 @@
 
 package org.springframework.security.core.userdetails.jdbc;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -27,7 +25,6 @@ import org.springframework.context.ApplicationContextException;
 import org.springframework.context.MessageSource;
 import org.springframework.context.MessageSourceAware;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.SpringSecurityMessageSource;
@@ -193,7 +190,7 @@ public class JdbcDaoImpl extends JdbcDaoSupport
 
 		UserDetails user = users.get(0); // contains no GrantedAuthority[]
 
-		Set<GrantedAuthority> dbAuthsSet = new HashSet<GrantedAuthority>();
+		Set<GrantedAuthority> dbAuthsSet = new HashSet<>();
 
 		if (this.enableAuthorities) {
 			dbAuthsSet.addAll(loadUserAuthorities(user.getUsername()));
@@ -203,7 +200,7 @@ public class JdbcDaoImpl extends JdbcDaoSupport
 			dbAuthsSet.addAll(loadGroupAuthorities(user.getUsername()));
 		}
 
-		List<GrantedAuthority> dbAuths = new ArrayList<GrantedAuthority>(dbAuthsSet);
+		List<GrantedAuthority> dbAuths = new ArrayList<>(dbAuthsSet);
 
 		addCustomAuthorities(user.getUsername(), dbAuths);
 
@@ -225,17 +222,12 @@ public class JdbcDaoImpl extends JdbcDaoSupport
 	 */
 	protected List<UserDetails> loadUsersByUsername(String username) {
 		return getJdbcTemplate().query(this.usersByUsernameQuery,
-				new String[] { username }, new RowMapper<UserDetails>() {
-					@Override
-					public UserDetails mapRow(ResultSet rs, int rowNum)
-							throws SQLException {
-						String username = rs.getString(1);
-						String password = rs.getString(2);
-						boolean enabled = rs.getBoolean(3);
-						return new User(username, password, enabled, true, true, true,
-								AuthorityUtils.NO_AUTHORITIES);
-					}
-
+				new String[] { username }, (rs, rowNum) -> {
+					String username1 = rs.getString(1);
+					String password = rs.getString(2);
+					boolean enabled = rs.getBoolean(3);
+					return new User(username1, password, enabled, true, true, true,
+							AuthorityUtils.NO_AUTHORITIES);
 				});
 	}
 
@@ -246,14 +238,10 @@ public class JdbcDaoImpl extends JdbcDaoSupport
 	 */
 	protected List<GrantedAuthority> loadUserAuthorities(String username) {
 		return getJdbcTemplate().query(this.authoritiesByUsernameQuery,
-				new String[] { username }, new RowMapper<GrantedAuthority>() {
-					@Override
-					public GrantedAuthority mapRow(ResultSet rs, int rowNum)
-							throws SQLException {
-						String roleName = JdbcDaoImpl.this.rolePrefix + rs.getString(2);
+				new String[] { username }, (rs, rowNum) -> {
+					String roleName = JdbcDaoImpl.this.rolePrefix + rs.getString(2);
 
-						return new SimpleGrantedAuthority(roleName);
-					}
+					return new SimpleGrantedAuthority(roleName);
 				});
 	}
 
@@ -265,14 +253,10 @@ public class JdbcDaoImpl extends JdbcDaoSupport
 	 */
 	protected List<GrantedAuthority> loadGroupAuthorities(String username) {
 		return getJdbcTemplate().query(this.groupAuthoritiesByUsernameQuery,
-				new String[] { username }, new RowMapper<GrantedAuthority>() {
-					@Override
-					public GrantedAuthority mapRow(ResultSet rs, int rowNum)
-							throws SQLException {
-						String roleName = getRolePrefix() + rs.getString(3);
+				new String[] { username }, (rs, rowNum) -> {
+					String roleName = getRolePrefix() + rs.getString(3);
 
-						return new SimpleGrantedAuthority(roleName);
-					}
+					return new SimpleGrantedAuthority(roleName);
 				});
 	}
 
@@ -295,14 +279,15 @@ public class JdbcDaoImpl extends JdbcDaoSupport
 		}
 
 		return new User(returnUsername, userFromUserQuery.getPassword(),
-				userFromUserQuery.isEnabled(), true, true, true, combinedAuthorities);
+				userFromUserQuery.isEnabled(), userFromUserQuery.isAccountNonExpired(),
+				userFromUserQuery.isCredentialsNonExpired(), userFromUserQuery.isAccountNonLocked(), combinedAuthorities);
 	}
 
 	/**
 	 * Allows the default query string used to retrieve authorities based on username to
 	 * be overridden, if default table or column names need to be changed. The default
 	 * query is {@link #DEF_AUTHORITIES_BY_USERNAME_QUERY}; when modifying this query,
-	 * ensure that all returned columns are mapped back to the same column names as in the
+	 * ensure that all returned columns are mapped back to the same column positions as in the
 	 * default query.
 	 *
 	 * @param queryString The SQL query string to set
@@ -320,7 +305,7 @@ public class JdbcDaoImpl extends JdbcDaoSupport
 	 * username to be overridden, if default table or column names need to be changed. The
 	 * default query is {@link #DEF_GROUP_AUTHORITIES_BY_USERNAME_QUERY}; when modifying
 	 * this query, ensure that all returned columns are mapped back to the same column
-	 * names as in the default query.
+	 * positions as in the default query.
 	 *
 	 * @param queryString The SQL query string to set
 	 */
@@ -370,7 +355,7 @@ public class JdbcDaoImpl extends JdbcDaoSupport
 	 * Allows the default query string used to retrieve users based on username to be
 	 * overridden, if default table or column names need to be changed. The default query
 	 * is {@link #DEF_USERS_BY_USERNAME_QUERY}; when modifying this query, ensure that all
-	 * returned columns are mapped back to the same column names as in the default query.
+	 * returned columns are mapped back to the same column positions as in the default query.
 	 * If the 'enabled' column does not exist in the source database, a permanent true
 	 * value for this column may be returned by using a query similar to
 	 *

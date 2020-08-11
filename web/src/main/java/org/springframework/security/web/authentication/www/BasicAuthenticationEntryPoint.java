@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,17 @@ package org.springframework.security.web.authentication.www;
 
 import java.io.IOException;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 /**
- * Used by the <code>ExceptionTraslationFilter</code> to commence authentication via the
+ * Used by the <code>ExceptionTranslationFilter</code> to commence authentication via the
  * {@link BasicAuthenticationFilter}.
  * <p>
  * Once a user agent is authenticated using BASIC authentication, logout requires that the
@@ -50,15 +50,14 @@ public class BasicAuthenticationEntryPoint implements AuthenticationEntryPoint,
 	// ~ Methods
 	// ========================================================================================================
 
-	public void afterPropertiesSet() throws Exception {
+	public void afterPropertiesSet() {
 		Assert.hasText(realmName, "realmName must be specified");
 	}
 
 	public void commence(HttpServletRequest request, HttpServletResponse response,
-			AuthenticationException authException) throws IOException, ServletException {
+			AuthenticationException authException) throws IOException {
 		response.addHeader("WWW-Authenticate", "Basic realm=\"" + realmName + "\"");
-		response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-				authException.getMessage());
+		response.sendError(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase());
 	}
 
 	public String getRealmName() {

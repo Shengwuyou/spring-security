@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -65,10 +65,10 @@ public class FastHttpDateFormat {
 	protected static String currentDate = null;
 
 	/** Formatter cache. */
-	protected static final HashMap<Long, String> formatCache = new HashMap<Long, String>();
+	protected static final HashMap<Long, String> formatCache = new HashMap<>();
 
 	/** Parser cache. */
-	protected static final HashMap<String, Long> parseCache = new HashMap<String, Long>();
+	protected static final HashMap<String, Long> parseCache = new HashMap<>();
 
 	// ~ Methods
 	// ========================================================================================================
@@ -85,7 +85,7 @@ public class FastHttpDateFormat {
 	 */
 	public static String formatDate(long value, DateFormat threadLocalformat) {
 		String cachedDate = null;
-		Long longValue = Long.valueOf(value);
+		Long longValue = value;
 
 		try {
 			cachedDate = formatCache.get(longValue);
@@ -160,7 +160,7 @@ public class FastHttpDateFormat {
 			return null;
 		}
 
-		return new Long(date.getTime());
+		return date.getTime();
 	}
 
 	/**
@@ -177,13 +177,13 @@ public class FastHttpDateFormat {
 		Long cachedDate = null;
 
 		try {
-			cachedDate = (Long) parseCache.get(value);
+			cachedDate = parseCache.get(value);
 		}
 		catch (Exception ignored) {
 		}
 
 		if (cachedDate != null) {
-			return cachedDate.longValue();
+			return cachedDate;
 		}
 
 		Long date;
@@ -206,7 +206,7 @@ public class FastHttpDateFormat {
 			return (-1L);
 		}
 		else {
-			return date.longValue();
+			return date;
 		}
 	}
 

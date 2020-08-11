@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,12 +24,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Joe Grandja
+ * @author Ankur Pathak
  */
 public class ContentSecurityPolicyHeaderWriterTests {
 	private static final String DEFAULT_POLICY_DIRECTIVES = "default-src 'self'";
 	private MockHttpServletRequest request;
 	private MockHttpServletResponse response;
 	private ContentSecurityPolicyHeaderWriter writer;
+	private static final String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
+	private static final String CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER = "Content-Security-Policy-Report-Only";
+
 
 	@Before
 	public void setup() {
@@ -40,10 +44,19 @@ public class ContentSecurityPolicyHeaderWriterTests {
 	}
 
 	@Test
+	public void writeHeadersWhenNoPolicyDirectivesThenUsesDefault() {
+		ContentSecurityPolicyHeaderWriter noPolicyWriter = new ContentSecurityPolicyHeaderWriter();
+		noPolicyWriter.writeHeaders(request, response);
+
+		assertThat(response.getHeaderNames()).hasSize(1);
+		assertThat(response.getHeader("Content-Security-Policy")).isEqualTo(DEFAULT_POLICY_DIRECTIVES);
+	}
+
+	@Test
 	public void writeHeadersContentSecurityPolicyDefault() {
 		writer.writeHeaders(request, response);
 
-		assertThat(response.getHeaderNames().size()).isEqualTo(1);
+		assertThat(response.getHeaderNames()).hasSize(1);
 		assertThat(response.getHeader("Content-Security-Policy")).isEqualTo(DEFAULT_POLICY_DIRECTIVES);
 	}
 
@@ -56,8 +69,18 @@ public class ContentSecurityPolicyHeaderWriterTests {
 		writer = new ContentSecurityPolicyHeaderWriter(policyDirectives);
 		writer.writeHeaders(request, response);
 
-		assertThat(response.getHeaderNames().size()).isEqualTo(1);
+		assertThat(response.getHeaderNames()).hasSize(1);
 		assertThat(response.getHeader("Content-Security-Policy")).isEqualTo(policyDirectives);
+	}
+
+	@Test
+	public void writeHeadersWhenNoPolicyDirectivesReportOnlyThenUsesDefault() {
+		ContentSecurityPolicyHeaderWriter noPolicyWriter = new ContentSecurityPolicyHeaderWriter();
+		writer.setReportOnly(true);
+		noPolicyWriter.writeHeaders(request, response);
+
+		assertThat(response.getHeaderNames()).hasSize(1);
+		assertThat(response.getHeader("Content-Security-Policy")).isEqualTo(DEFAULT_POLICY_DIRECTIVES);
 	}
 
 	@Test
@@ -65,7 +88,7 @@ public class ContentSecurityPolicyHeaderWriterTests {
 		writer.setReportOnly(true);
 		writer.writeHeaders(request, response);
 
-		assertThat(response.getHeaderNames().size()).isEqualTo(1);
+		assertThat(response.getHeaderNames()).hasSize(1);
 		assertThat(response.getHeader("Content-Security-Policy-Report-Only")).isEqualTo(DEFAULT_POLICY_DIRECTIVES);
 	}
 
@@ -77,7 +100,7 @@ public class ContentSecurityPolicyHeaderWriterTests {
 		writer.setReportOnly(true);
 		writer.writeHeaders(request, response);
 
-		assertThat(response.getHeaderNames().size()).isEqualTo(1);
+		assertThat(response.getHeaderNames()).hasSize(1);
 		assertThat(response.getHeader("Content-Security-Policy-Report-Only")).isEqualTo(policyDirectives);
 	}
 
@@ -87,4 +110,21 @@ public class ContentSecurityPolicyHeaderWriterTests {
 		writer = new ContentSecurityPolicyHeaderWriter(null);
 	}
 
+
+	@Test
+	public void writeContentSecurityPolicyHeaderWhenNotPresent() {
+		String value = new String("value");
+		this.response.setHeader(CONTENT_SECURITY_POLICY_HEADER, value);
+		this.writer.writeHeaders(this.request, this.response);
+		assertThat(this.response.getHeader(CONTENT_SECURITY_POLICY_HEADER)).isSameAs(value);
+	}
+
+	@Test
+	public void writeContentSecurityPolicyReportOnlyHeaderWhenNotPresent() {
+		String value = new String("value");
+		this.response.setHeader(CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER, value);
+		this.writer.setReportOnly(true);
+		this.writer.writeHeaders(this.request, this.response);
+		assertThat(this.response.getHeader(CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER)).isSameAs(value);
+	}
 }

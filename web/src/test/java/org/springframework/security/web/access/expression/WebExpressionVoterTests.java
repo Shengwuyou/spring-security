@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,7 @@
 package org.springframework.security.web.access.expression;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,8 +28,6 @@ import javax.servlet.ServletResponse;
 
 import org.aopalliance.intercept.MethodInvocation;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.security.access.AccessDecisionVoter;
@@ -48,7 +46,7 @@ public class WebExpressionVoterTests {
 	private Authentication user = new TestingAuthenticationToken("user", "pass", "X");
 
 	@Test
-	public void supportsWebConfigAttributeAndFilterInvocation() throws Exception {
+	public void supportsWebConfigAttributeAndFilterInvocation() {
 		WebExpressionVoter voter = new WebExpressionVoter();
 		assertThat(voter.supports(new WebExpressionConfigAttribute(mock(Expression.class),
 				mock(EvaluationContextPostProcessor.class)))).isTrue();
@@ -72,13 +70,7 @@ public class WebExpressionVoterTests {
 		EvaluationContextPostProcessor postProcessor = mock(
 				EvaluationContextPostProcessor.class);
 		when(postProcessor.postProcess(any(EvaluationContext.class),
-				any(FilterInvocation.class))).thenAnswer(new Answer<EvaluationContext>() {
-
-					public EvaluationContext answer(InvocationOnMock invocation)
-							throws Throwable {
-						return invocation.getArgumentAt(0, EvaluationContext.class);
-					}
-				});
+				any(FilterInvocation.class))).thenAnswer( invocation -> invocation.getArgument(0));
 		WebExpressionConfigAttribute weca = new WebExpressionConfigAttribute(ex,
 				postProcessor);
 		EvaluationContext ctx = mock(EvaluationContext.class);
@@ -109,7 +101,7 @@ public class WebExpressionVoterTests {
 
 	private static class FilterInvocationChild extends FilterInvocation {
 
-		public FilterInvocationChild(ServletRequest request, ServletResponse response,
+		FilterInvocationChild(ServletRequest request, ServletResponse response,
 				FilterChain chain) {
 			super(request, response, chain);
 		}

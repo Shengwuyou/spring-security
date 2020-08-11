@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,7 @@ package sample;
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -102,27 +102,27 @@ public class DmsIntegrationTests extends AbstractTransactionalJUnit4SpringContex
 		System.out.println("------ Test for username: " + username + " ------");
 		AbstractElement[] rootElements = this.documentDao
 				.findElements(Directory.ROOT_DIRECTORY);
-		assertThat(rootElements.length).isEqualTo(3);
+		assertThat(rootElements).hasSize(3);
 		Directory homeDir = null;
 		Directory nonHomeDir = null;
-		for (int i = 0; i < rootElements.length; i++) {
-			if (rootElements[i].getName().equals(username)) {
-				homeDir = (Directory) rootElements[i];
+		for (AbstractElement rootElement : rootElements) {
+			if (rootElement.getName().equals(username)) {
+				homeDir = (Directory) rootElement;
 			}
 			else {
-				nonHomeDir = (Directory) rootElements[i];
+				nonHomeDir = (Directory) rootElement;
 			}
 		}
 		System.out.println("Home directory......: " + homeDir.getFullName());
 		System.out.println("Non-home directory..: " + nonHomeDir.getFullName());
 
 		AbstractElement[] homeElements = this.documentDao.findElements(homeDir);
-		assertThat(homeElements.length).isEqualTo(12); // confidential and shared
+		assertThat(homeElements).hasSize(12); // confidential and shared
 														// directories,
 		// plus 10 files
 
 		AbstractElement[] nonHomeElements = this.documentDao.findElements(nonHomeDir);
-		assertThat(nonHomeElements.length).isEqualTo(shouldBeFiltered ? 11 : 12); // cannot
+		assertThat(nonHomeElements).hasSize(shouldBeFiltered ? 11 : 12); // cannot
 																					// see
 		// the user's
 		// "confidential"
@@ -135,9 +135,9 @@ public class DmsIntegrationTests extends AbstractTransactionalJUnit4SpringContex
 		// Of course, we shouldn't find a "confidential" directory in the results if we're
 		// filtering
 		Directory nonHomeConfidentialDir = null;
-		for (int i = 0; i < nonHomeElements.length; i++) {
-			if (nonHomeElements[i].getName().equals("confidential")) {
-				nonHomeConfidentialDir = (Directory) nonHomeElements[i];
+		for (AbstractElement nonHomeElement : nonHomeElements) {
+			if (nonHomeElement.getName().equals("confidential")) {
+				nonHomeConfidentialDir = (Directory) nonHomeElement;
 			}
 		}
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.springframework.security.web.util.OnCommittedResponseWrapper;
 
@@ -94,9 +94,9 @@ public class OnCommittedResponseWrapperTests {
 		int off = 2;
 		int len = 3;
 
-		response.getWriter().write(buff,off,len);
+		response.getWriter().write(buff, off, len);
 
-		verify(writer).write(buff,off,len);
+		verify(writer).write(buff, off, len);
 	}
 
 	@Test
@@ -114,9 +114,9 @@ public class OnCommittedResponseWrapperTests {
 		int off = 2;
 		int len = 3;
 
-		response.getWriter().write(s,off,len);
+		response.getWriter().write(s, off, len);
 
-		verify(writer).write(s,off,len);
+		verify(writer).write(s, off, len);
 	}
 
 	@Test
@@ -602,7 +602,7 @@ public class OnCommittedResponseWrapperTests {
 		int len = 3;
 		response.setContentLength(3);
 
-		response.getWriter().write(buff,off,len);
+		response.getWriter().write(buff, off, len);
 
 		assertThat(committed).isTrue();
 	}
@@ -624,7 +624,7 @@ public class OnCommittedResponseWrapperTests {
 		int len = 3;
 		response.setContentLength(3);
 
-		response.getWriter().write(s,off,len);
+		response.getWriter().write(s, off, len);
 
 		assertThat(committed).isTrue();
 	}
@@ -1083,7 +1083,7 @@ public class OnCommittedResponseWrapperTests {
 	}
 
 	@Test
-	public void contentLengthDoesNotCommit() throws IOException {
+	public void contentLengthDoesNotCommit() {
 		String body = "something";
 
 		response.setContentLength(body.length());
@@ -1101,10 +1101,21 @@ public class OnCommittedResponseWrapperTests {
 		assertThat(committed).isTrue();
 	}
 
+	// gh-7261
+	@Test
+	public void contentLengthLongOutputStreamWriteStringCommits() throws IOException {
+		String body = "something";
+		response.setContentLengthLong(body.length());
+
+		response.getOutputStream().print(body);
+
+		assertThat(committed).isTrue();
+	}
+
 	@Test
 	public void addHeaderContentLengthPrintWriterWriteStringCommits() throws Exception {
 		int expected = 1234;
-		response.addHeader("Content-Length",String.valueOf(String.valueOf(expected).length()));
+		response.addHeader("Content-Length", String.valueOf(String.valueOf(expected).length()));
 
 		response.getWriter().write(expected);
 

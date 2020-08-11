@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,11 +15,13 @@
  */
 package org.springframework.security.ldap.server;
 
-import java.io.File;
-import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,6 +40,7 @@ import org.apache.directory.server.protocol.shared.store.LdifFileLoader;
 import org.apache.directory.server.protocol.shared.transport.TcpTransport;
 import org.apache.directory.shared.ldap.exception.LdapNameNotFoundException;
 import org.apache.directory.shared.ldap.name.LdapDN;
+import org.apache.mina.transport.socket.SocketAcceptor;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -68,7 +71,11 @@ import org.springframework.util.Assert;
  * @author Luke Taylor
  * @author Rob Winch
  * @author Gunnar Hillert
+ * @author Evgeniy Cheban
+ * @deprecated Use {@link UnboundIdContainer} instead because ApacheDS 1.x is no longer
+ * supported with no GA version to replace it.
  */
+@Deprecated
 public class ApacheDSContainer implements InitializingBean, DisposableBean, Lifecycle,
 		ApplicationContextAware {
 	private final Log logger = LogFactory.getLog(getClass());
@@ -76,6 +83,7 @@ public class ApacheDSContainer implements InitializingBean, DisposableBean, Life
 	final DefaultDirectoryService service;
 	LdapServer server;
 
+	private TcpTransport transport;
 	private ApplicationContext ctxt;
 	private File workingDir;
 
@@ -84,6 +92,7 @@ public class ApacheDSContainer implements InitializingBean, DisposableBean, Life
 	private final JdbmPartition partition;
 	private final String root;
 	private int port = 53389;
+	private int localPort;
 
 	private boolean ldapOverSslEnabled;
 	private File keyStoreFile;
@@ -92,7 +101,7 @@ public class ApacheDSContainer implements InitializingBean, DisposableBean, Life
 	public ApacheDSContainer(String root, String ldifs) throws Exception {
 		this.ldifResources = ldifs;
 		service = new DefaultDirectoryService();
-		List<Interceptor> list = new ArrayList<Interceptor>();
+		List<Interceptor> list = new ArrayList<>();
 
 		list.add(new NormalizationInterceptor());
 		list.add(new AuthenticationInterceptor());
@@ -139,7 +148,7 @@ public class ApacheDSContainer implements InitializingBean, DisposableBean, Life
 		server.setDirectoryService(service);
 		// AbstractLdapIntegrationTests assume IPv4, so we specify the same here
 
-		TcpTransport transport = new TcpTransport(port);
+		this.transport = new TcpTransport(port);
 		if (ldapOverSslEnabled) {
 				transport.setEnableSSL(true);
 				server.setKeystoreFile(this.keyStoreFile.getAbsolutePath());
@@ -149,7 +158,7 @@ public class ApacheDSContainer implements InitializingBean, DisposableBean, Life
 		start();
 	}
 
-	public void destroy() throws Exception {
+	public void destroy() {
 		stop();
 	}
 
@@ -180,6 +189,19 @@ public class ApacheDSContainer implements InitializingBean, DisposableBean, Life
 
 	public void setPort(int port) {
 		this.port = port;
+	}
+
+	public int getPort() {
+		return this.port;
+	}
+
+	/**
+	 * Returns the port that is resolved by {@link TcpTransport}.
+	 *
+	 * @return the port that is resolved by {@link TcpTransport}
+	 */
+	public int getLocalPort() {
+		return this.localPort;
 	}
 
 	/**
@@ -253,6 +275,10 @@ public class ApacheDSContainer implements InitializingBean, DisposableBean, Life
 		catch (Exception e) {
 			logger.error("Lookup failed", e);
 		}
+
+		SocketAcceptor socketAcceptor = this.server.getSocketAcceptor(this.transport);
+		InetSocketAddress localAddress = socketAcceptor.getLocalAddress();
+		this.localPort = localAddress.getPort();
 
 		running = true;
 

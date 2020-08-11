@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -42,19 +42,19 @@ public class SavedRequestAwareWrapperTests {
 
 	// SEC-2569
 	@Test
-	public void savedRequestCookiesAreIgnored() throws Exception {
+	public void savedRequestCookiesAreIgnored() {
 		MockHttpServletRequest newRequest = new MockHttpServletRequest();
 		newRequest.setCookies(new Cookie[] { new Cookie("cookie", "fromnew") });
 		MockHttpServletRequest savedRequest = new MockHttpServletRequest();
 		savedRequest.setCookies(new Cookie[] { new Cookie("cookie", "fromsaved") });
 		SavedRequestAwareWrapper wrapper = createWrapper(savedRequest, newRequest);
-		assertThat(wrapper.getCookies().length).isEqualTo(1);
+		assertThat(wrapper.getCookies()).hasSize(1);
 		assertThat(wrapper.getCookies()[0].getValue()).isEqualTo("fromnew");
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void savedRequesthHeaderIsReturnedIfSavedRequestIsSet() throws Exception {
+	public void savedRequesthHeaderIsReturnedIfSavedRequestIsSet() {
 		MockHttpServletRequest savedRequest = new MockHttpServletRequest();
 		savedRequest.addHeader("header", "savedheader");
 		SavedRequestAwareWrapper wrapper = createWrapper(savedRequest,
@@ -89,7 +89,7 @@ public class SavedRequestAwareWrapperTests {
 		wrappedRequest.setParameter("action", "bar");
 		assertThat(wrapper.getParameter("action")).isEqualTo("bar");
 		// Both values should be set, but "bar" should be first
-		assertThat(wrapper.getParameterValues("action").length).isEqualTo(2);
+		assertThat(wrapper.getParameterValues("action")).hasSize(2);
 		assertThat(wrapper.getParameterValues("action")[0]).isEqualTo("bar");
 	}
 
@@ -100,9 +100,9 @@ public class SavedRequestAwareWrapperTests {
 		MockHttpServletRequest wrappedRequest = new MockHttpServletRequest();
 		wrappedRequest.setParameter("action", "foo");
 		SavedRequestAwareWrapper wrapper = createWrapper(savedRequest, wrappedRequest);
-		assertThat(wrapper.getParameterValues("action").length).isEqualTo(1);
+		assertThat(wrapper.getParameterValues("action")).hasSize(1);
 		assertThat(wrapper.getParameterMap()).hasSize(1);
-		assertThat(((String[]) wrapper.getParameterMap().get("action")).length).isEqualTo(1);
+		assertThat(((String[]) wrapper.getParameterMap().get("action"))).hasSize(1);
 	}
 
 	@Test
@@ -135,7 +135,7 @@ public class SavedRequestAwareWrapperTests {
 		assertThat(wrapper.getParameterValues("action")).isEqualTo(new Object[] { "bar", "foo" });
 		// Check map is consistent
 		String[] valuesFromMap = (String[]) wrapper.getParameterMap().get("action");
-		assertThat(valuesFromMap.length).isEqualTo(2);
+		assertThat(valuesFromMap).hasSize(2);
 		assertThat(valuesFromMap[0]).isEqualTo("bar");
 	}
 
@@ -155,7 +155,7 @@ public class SavedRequestAwareWrapperTests {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void invalidDateHeaderIsRejected() throws Exception {
+	public void invalidDateHeaderIsRejected() {
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.addHeader("header", "notadate");
 		SavedRequestAwareWrapper wrapper = createWrapper(request,
@@ -164,7 +164,7 @@ public class SavedRequestAwareWrapperTests {
 	}
 
 	@Test
-	public void correctHttpMethodIsReturned() throws Exception {
+	public void correctHttpMethodIsReturned() {
 		MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/notused");
 		SavedRequestAwareWrapper wrapper = createWrapper(request,
 				new MockHttpServletRequest("GET", "/notused"));
@@ -172,7 +172,7 @@ public class SavedRequestAwareWrapperTests {
 	}
 
 	@Test
-	public void correctIntHeaderIsReturned() throws Exception {
+	public void correctIntHeaderIsReturned() {
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.addHeader("header", "999");
 		request.addHeader("header", "1000");

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,7 +41,9 @@ import org.springframework.security.provisioning.UserDetailsManager;
 public class UserDetailsManagerConfigurer<B extends ProviderManagerBuilder<B>, C extends UserDetailsManagerConfigurer<B, C>>
 		extends UserDetailsServiceConfigurer<B, C, UserDetailsManager> {
 
-	private final List<UserDetailsBuilder> userBuilders = new ArrayList<UserDetailsBuilder>();
+	private final List<UserDetailsBuilder> userBuilders = new ArrayList<>();
+
+	private final List<UserDetails> users = new ArrayList<>();
 
 	protected UserDetailsManagerConfigurer(UserDetailsManager userDetailsManager) {
 		super(userDetailsManager);
@@ -57,6 +59,35 @@ public class UserDetailsManagerConfigurer<B extends ProviderManagerBuilder<B>, C
 		for (UserDetailsBuilder userBuilder : userBuilders) {
 			getUserDetailsService().createUser(userBuilder.build());
 		}
+		for (UserDetails userDetails : this.users) {
+			getUserDetailsService().createUser(userDetails);
+		}
+	}
+
+	/**
+	 * Allows adding a user to the {@link UserDetailsManager} that is being created. This
+	 * method can be invoked multiple times to add multiple users.
+	 *
+	 * @param userDetails the user to add. Cannot be null.
+	 * @return the {@link UserDetailsBuilder} for further customizations
+	 */
+	@SuppressWarnings("unchecked")
+	public final C withUser(UserDetails userDetails) {
+		this.users.add(userDetails);
+		return (C) this;
+	}
+
+	/**
+	 * Allows adding a user to the {@link UserDetailsManager} that is being created. This
+	 * method can be invoked multiple times to add multiple users.
+	 *
+	 * @param userBuilder the user to add. Cannot be null.
+	 * @return the {@link UserDetailsBuilder} for further customizations
+	 */
+	@SuppressWarnings("unchecked")
+	public final C withUser(User.UserBuilder userBuilder) {
+		this.users.add(userBuilder.build());
+		return (C) this;
 	}
 
 	/**
@@ -64,7 +95,7 @@ public class UserDetailsManagerConfigurer<B extends ProviderManagerBuilder<B>, C
 	 * method can be invoked multiple times to add multiple users.
 	 *
 	 * @param username the username for the user being added. Cannot be null.
-	 * @return
+	 * @return the {@link UserDetailsBuilder} for further customizations
 	 */
 	@SuppressWarnings("unchecked")
 	public final UserDetailsBuilder withUser(String username) {
@@ -244,7 +275,7 @@ public class UserDetailsManagerConfigurer<B extends ProviderManagerBuilder<B>, C
 			return this;
 		}
 
-		private UserDetails build() {
+		UserDetails build() {
 			return this.user.build();
 		}
 	}

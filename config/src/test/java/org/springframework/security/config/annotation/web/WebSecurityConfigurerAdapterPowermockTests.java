@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,23 +15,42 @@
  */
 package org.springframework.security.config.annotation.web;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.powermock.api.mockito.PowerMockito.*;
-
 import java.util.Arrays;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.support.SpringFactoriesLoader;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.test.SpringTestRule;
+import org.springframework.security.core.userdetails.PasswordEncodedUser;
+import org.springframework.security.web.context.request.async.SecurityContextCallableProcessingInterceptor;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.ConfigurableWebApplicationContext;
+import org.springframework.web.context.request.async.CallableProcessingInterceptor;
+import org.springframework.web.context.request.async.WebAsyncManager;
+import org.springframework.web.context.request.async.WebAsyncUtils;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.powermock.api.mockito.PowerMockito.spy;
+import static org.powermock.api.mockito.PowerMockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /**
  *
@@ -39,13 +58,20 @@ import org.springframework.web.context.support.AnnotationConfigWebApplicationCon
  *
  */
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ SpringFactoriesLoader.class })
+@PrepareForTest({ SpringFactoriesLoader.class, WebAsyncManager.class })
+@PowerMockIgnore({ "org.w3c.dom.*", "org.xml.sax.*", "org.apache.xerces.*", "javax.xml.parsers.*", "javax.xml.transform.*" })
 public class WebSecurityConfigurerAdapterPowermockTests {
 	ConfigurableWebApplicationContext context;
 
+	@Rule
+	public final SpringTestRule spring = new SpringTestRule();
+
+	@Autowired
+	private MockMvc mockMvc;
+
 	@After
 	public void close() {
-		if(context != null) {
+		if (context != null) {
 			context.close();
 		}
 	}
@@ -75,22 +101,58 @@ public class WebSecurityConfigurerAdapterPowermockTests {
 	@EnableWebSecurity
 	static class Config extends WebSecurityConfigurerAdapter {
 		@Override
-		protected void configure(HttpSecurity http) throws Exception {
+		protected void configure(HttpSecurity http) {
 		}
 	}
 
-	static class DefaultConfigurer extends AbstractHttpConfigurer<DefaultConfigurer,HttpSecurity> {
+	static class DefaultConfigurer extends AbstractHttpConfigurer<DefaultConfigurer, HttpSecurity> {
 		boolean init;
 		boolean configure;
 
 		@Override
-		public void init(HttpSecurity builder) throws Exception {
+		public void init(HttpSecurity builder) {
 			this.init = true;
 		}
 
 		@Override
-		public void configure(HttpSecurity builder) throws Exception {
+		public void configure(HttpSecurity builder) {
 			this.configure = true;
+		}
+	}
+
+	@Test
+	public void loadConfigWhenDefaultConfigThenWebAsyncManagerIntegrationFilterAdded() throws Exception {
+		this.spring.register(WebAsyncPopulatedByDefaultConfig.class).autowire();
+
+		WebAsyncManager webAsyncManager = mock(WebAsyncManager.class);
+
+		this.mockMvc.perform(get("/").requestAttr(WebAsyncUtils.WEB_ASYNC_MANAGER_ATTRIBUTE, webAsyncManager));
+
+		ArgumentCaptor<CallableProcessingInterceptor> callableProcessingInterceptorArgCaptor =
+				ArgumentCaptor.forClass(CallableProcessingInterceptor.class);
+		verify(webAsyncManager, atLeastOnce()).registerCallableInterceptor(any(), callableProcessingInterceptorArgCaptor.capture());
+
+		CallableProcessingInterceptor callableProcessingInterceptor =
+				callableProcessingInterceptorArgCaptor.getAllValues().stream()
+						.filter(e -> SecurityContextCallableProcessingInterceptor.class.isAssignableFrom(e.getClass()))
+						.findFirst()
+						.orElse(null);
+
+		assertThat(callableProcessingInterceptor).isNotNull();
+	}
+
+	@EnableWebSecurity
+	static class WebAsyncPopulatedByDefaultConfig extends WebSecurityConfigurerAdapter {
+
+		@Override
+		protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+			auth
+					.inMemoryAuthentication()
+					.withUser(PasswordEncodedUser.user());
+		}
+
+		@Override
+		protected void configure(HttpSecurity http) {
 		}
 	}
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
  *
  * @author Marten Deinum
  * @author Rob Winch
+ * @author Ankur Pathak
  * @since 3.2
  *
  * @see AllowFromStrategy
@@ -67,7 +68,13 @@ public final class XFrameOptionsHeaderWriter implements HeaderWriter {
 	 *
 	 * @param allowFromStrategy the strategy for determining what the value for ALLOW_FROM
 	 * is.
+	 *
+	 * @deprecated ALLOW-FROM is an obsolete directive that no longer works in modern browsers. Instead use
+	 * Content-Security-Policy with the
+	 * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors">frame-ancestors</a>
+	 * directive.
 	 */
+	@Deprecated
 	public XFrameOptionsHeaderWriter(AllowFromStrategy allowFromStrategy) {
 		Assert.notNull(allowFromStrategy, "allowFromStrategy cannot be null");
 		this.frameOptionsMode = XFrameOptionsMode.ALLOW_FROM;
@@ -82,10 +89,16 @@ public final class XFrameOptionsHeaderWriter implements HeaderWriter {
 	 */
 	public void writeHeaders(HttpServletRequest request, HttpServletResponse response) {
 		if (XFrameOptionsMode.ALLOW_FROM.equals(frameOptionsMode)) {
-			String allowFromValue = allowFromStrategy.getAllowFromValue(request);
-			if (allowFromValue != null) {
-				response.setHeader(XFRAME_OPTIONS_HEADER,
-						XFrameOptionsMode.ALLOW_FROM.getMode() + " " + allowFromValue);
+			String allowFromValue = this.allowFromStrategy.getAllowFromValue(request);
+			if (XFrameOptionsMode.DENY.getMode().equals(allowFromValue)) {
+				if (!response.containsHeader(XFRAME_OPTIONS_HEADER)) {
+					response.setHeader(XFRAME_OPTIONS_HEADER, XFrameOptionsMode.DENY.getMode());
+				}
+			} else if (allowFromValue != null) {
+				if (!response.containsHeader(XFRAME_OPTIONS_HEADER)) {
+					response.setHeader(XFRAME_OPTIONS_HEADER,
+							XFrameOptionsMode.ALLOW_FROM.getMode() + " " + allowFromValue);
+				}
 			}
 		}
 		else {
@@ -100,11 +113,19 @@ public final class XFrameOptionsHeaderWriter implements HeaderWriter {
 	 * @since 3.2
 	 */
 	public enum XFrameOptionsMode {
-		DENY("DENY"), SAMEORIGIN("SAMEORIGIN"), ALLOW_FROM("ALLOW-FROM");
+		DENY("DENY"), SAMEORIGIN("SAMEORIGIN"),
+		/**
+		 * @deprecated ALLOW-FROM is an obsolete directive that no longer works in modern browsers. Instead use
+		 * Content-Security-Policy with the
+		 * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors">frame-ancestors</a>
+		 * directive.
+		 */
+		@Deprecated
+		ALLOW_FROM("ALLOW-FROM");
 
 		private String mode;
 
-		private XFrameOptionsMode(String mode) {
+		XFrameOptionsMode(String mode) {
 			this.mode = mode;
 		}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -62,14 +61,14 @@ class PreAuthenticatedAuthenticationTokenDeserializer extends JsonDeserializer<P
 		Boolean authenticated = readJsonNode(jsonNode, "authenticated").asBoolean();
 		JsonNode principalNode = readJsonNode(jsonNode, "principal");
 		Object principal = null;
-		if(principalNode.isObject()) {
-			principal = mapper.readValue(principalNode.toString(), new TypeReference<User>() {});
+		if (principalNode.isObject()) {
+			principal = mapper.readValue(principalNode.traverse(mapper), Object.class);
 		} else {
 			principal = principalNode.asText();
 		}
 		Object credentials = readJsonNode(jsonNode, "credentials").asText();
 		List<GrantedAuthority> authorities = mapper.readValue(
-				readJsonNode(jsonNode, "authorities").toString(), new TypeReference<List<GrantedAuthority>>() {
+				readJsonNode(jsonNode, "authorities").traverse(mapper), new TypeReference<List<GrantedAuthority>>() {
 		});
 		if (authenticated) {
 			token = new PreAuthenticatedAuthenticationToken(principal, credentials, authorities);

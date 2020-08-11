@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,18 +38,22 @@ public class DefaultToken implements Token {
 		this.extendedInformation = extendedInformation;
 	}
 
+	@Override
 	public String getKey() {
 		return key;
 	}
 
+	@Override
 	public long getKeyCreationTime() {
 		return keyCreationTime;
 	}
 
+	@Override
 	public String getExtendedInformation() {
 		return extendedInformation;
 	}
 
+	@Override
 	public boolean equals(Object obj) {
 		if (obj != null && obj instanceof DefaultToken) {
 			DefaultToken rhs = (DefaultToken) obj;
@@ -60,6 +64,7 @@ public class DefaultToken implements Token {
 		return false;
 	}
 
+	@Override
 	public int hashCode() {
 		int code = 979;
 		code = code * key.hashCode();
@@ -68,6 +73,7 @@ public class DefaultToken implements Token {
 		return code;
 	}
 
+	@Override
 	public String toString() {
 		return "DefaultToken[key=" + key + "; creation=" + new Date(keyCreationTime)
 				+ "; extended=" + extendedInformation + "]";

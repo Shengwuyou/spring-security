@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import reactor.core.publisher.Flux;
@@ -34,8 +34,7 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.util.context.Context;
 
-import java.util.function.Function;
-
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 /**
@@ -49,10 +48,8 @@ public class EnableReactiveMethodSecurityTests {
 	ReactiveMessageService delegate;
 	TestPublisher<String> result = TestPublisher.create();
 
-	Function<Context, Context> withAdmin = context -> context.put(Authentication.class, Mono
-		.just(new TestingAuthenticationToken("admin","password","ROLE_USER", "ROLE_ADMIN")));
-	Function<Context, Context> withUser = context -> context.put(Authentication.class, Mono
-		.just(new TestingAuthenticationToken("user","password","ROLE_USER")));
+	Context withAdmin = ReactiveSecurityContextHolder.withAuthentication(new TestingAuthenticationToken("admin", "password", "ROLE_USER", "ROLE_ADMIN"));
+	Context withUser = ReactiveSecurityContextHolder.withAuthentication(new TestingAuthenticationToken("user", "password", "ROLE_USER"));
 
 	@After
 	public void cleanup() {
@@ -62,6 +59,14 @@ public class EnableReactiveMethodSecurityTests {
 	@Autowired
 	public void setConfig(Config config) {
 		this.delegate = config.delegate;
+	}
+
+	@Test
+	public void notPublisherPreAuthorizeFindByIdThenThrowsIllegalStateException() {
+		assertThatThrownBy(() -> this.messageService.notPublisherPreAuthorizeFindById(1L))
+			.isInstanceOf(IllegalStateException.class)
+			.extracting(Throwable::getMessage)
+			.isEqualTo("The returnType class java.lang.String on public abstract java.lang.String org.springframework.security.config.annotation.method.configuration.ReactiveMessageService.notPublisherPreAuthorizeFindById(long) must return an instance of org.reactivestreams.Publisher (i.e. Mono / Flux) in order to support Reactor Context");
 	}
 
 	@Test

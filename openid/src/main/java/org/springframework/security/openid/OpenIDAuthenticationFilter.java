@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -59,6 +59,9 @@ import java.util.*;
  * where it should (normally) be processed by an <tt>OpenIDAuthenticationProvider</tt> in
  * order to load the authorities for the user.
  *
+ * @deprecated The OpenID 1.0 and 2.0 protocols have been deprecated and users are
+ * <a href="https://openid.net/specs/openid-connect-migration-1_0.html">encouraged to migrate</a>
+ * to <a href="https://openid.net/connect/">OpenID Connect</a>, which is supported by <code>spring-security-oauth2</code>.
  * @author Robin Bramley
  * @author Ray Krueger
  * @author Luke Taylor
@@ -104,7 +107,7 @@ public class OpenIDAuthenticationFilter extends AbstractAuthenticationProcessing
 
 		if (returnToUrlParameters.isEmpty()
 				&& getRememberMeServices() instanceof AbstractRememberMeServices) {
-			returnToUrlParameters = new HashSet<String>();
+			returnToUrlParameters = new HashSet<>();
 			returnToUrlParameters
 					.add(((AbstractRememberMeServices) getRememberMeServices())
 							.getParameter());
@@ -249,13 +252,13 @@ public class OpenIDAuthenticationFilter extends AbstractAuthenticationProcessing
 	 * Maps the <tt>return_to url</tt> to a realm, for example:
 	 *
 	 * <pre>
-	 * http://www.example.com/login/openid -&gt; http://www.example.com/realm
+	 * https://www.example.com/login/openid -&gt; https://www.example.com/realm
 	 * </pre>
 	 *
 	 * If no mapping is provided then the returnToUrl will be parsed to extract the
 	 * protocol, hostname and port followed by a trailing slash. This means that
-	 * <tt>http://www.example.com/login/openid</tt> will automatically become
-	 * <tt>http://www.example.com:80/</tt>
+	 * <tt>https://foo.example.com/login/openid</tt> will automatically become
+	 * <tt>http://foo.example.com:80/</tt>
 	 *
 	 * @param realmMapping containing returnToUrl -&gt; realm mappings
 	 */

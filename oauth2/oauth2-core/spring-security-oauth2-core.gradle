@@ -5,5 +5,9 @@ dependencies {
 	compile springCoreDependency
 	compile 'org.springframework:spring-web'
 
-	provided 'javax.servlet:javax.servlet-api'
+	optional 'com.fasterxml.jackson.core:jackson-databind'
+	optional 'com.nimbusds:oauth2-oidc-sdk'
+	optional 'org.springframework:spring-webflux'
+
+	testCompile powerMock2Dependencies
 }

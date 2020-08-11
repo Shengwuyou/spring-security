@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,7 @@ package org.springframework.security.core;
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *  https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -92,9 +92,9 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 	private ListItem items;
 
 	private interface Item {
-		final int INTEGER_ITEM = 0;
-		final int STRING_ITEM = 1;
-		final int LIST_ITEM = 2;
+		int INTEGER_ITEM = 0;
+		int STRING_ITEM = 1;
+		int LIST_ITEM = 2;
 
 		int compareTo(Item item);
 
@@ -117,18 +117,21 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 			this.value = BigInteger_ZERO;
 		}
 
-		public IntegerItem(String str) {
+		IntegerItem(String str) {
 			this.value = new BigInteger(str);
 		}
 
+		@Override
 		public int getType() {
 			return INTEGER_ITEM;
 		}
 
+		@Override
 		public boolean isNull() {
 			return BigInteger_ZERO.equals(value);
 		}
 
+		@Override
 		public int compareTo(Item item) {
 			if (item == null) {
 				return BigInteger_ZERO.equals(value) ? 0 : 1; // 1.0 == 1, 1.1 > 1
@@ -149,6 +152,7 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 			}
 		}
 
+		@Override
 		public String toString() {
 			return value.toString();
 		}
@@ -180,7 +184,7 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 
 		private String value;
 
-		public StringItem(String value, boolean followedByDigit) {
+		StringItem(String value, boolean followedByDigit) {
 			if (followedByDigit && value.length() == 1) {
 				// a1 = alpha-1, b1 = beta-1, m1 = milestone-1
 				switch (value.charAt(0)) {
@@ -198,10 +202,12 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 			this.value = ALIASES.getProperty(value, value);
 		}
 
+		@Override
 		public int getType() {
 			return STRING_ITEM;
 		}
 
+		@Override
 		public boolean isNull() {
 			return (comparableQualifier(value).compareTo(RELEASE_VERSION_INDEX) == 0);
 		}
@@ -226,6 +232,7 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 			return i == -1 ? (_QUALIFIERS.size() + "-" + qualifier) : String.valueOf(i);
 		}
 
+		@Override
 		public int compareTo(Item item) {
 			if (item == null) {
 				// 1-rc < 1, 1-ga > 1
@@ -247,6 +254,7 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 			}
 		}
 
+		@Override
 		public String toString() {
 			return value;
 		}
@@ -257,10 +265,12 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 	 * and for sub-lists (which start with '-(number)' in the version specification).
 	 */
 	private static class ListItem extends ArrayList<Item> implements Item {
+		@Override
 		public int getType() {
 			return LIST_ITEM;
 		}
 
+		@Override
 		public boolean isNull() {
 			return (size() == 0);
 		}
@@ -278,6 +288,7 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 			}
 		}
 
+		@Override
 		public int compareTo(Item item) {
 			if (item == null) {
 				if (size() == 0) {
@@ -316,6 +327,7 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 			}
 		}
 
+		@Override
 		public String toString() {
 			StringBuilder buffer = new StringBuilder("(");
 			for (Iterator<Item> iter = iterator(); iter.hasNext();) {
@@ -329,7 +341,7 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 		}
 	}
 
-	public ComparableVersion(String version) {
+	ComparableVersion(String version) {
 		parseVersion(version);
 	}
 
@@ -342,7 +354,7 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 
 		ListItem list = items;
 
-		Stack<Item> stack = new Stack<Item>();
+		Stack<Item> stack = new Stack<>();
 		stack.push(list);
 
 		boolean isDigit = false;
@@ -418,19 +430,23 @@ class ComparableVersion implements Comparable<ComparableVersion> {
 		return isDigit ? new IntegerItem(buf) : new StringItem(buf, false);
 	}
 
+	@Override
 	public int compareTo(ComparableVersion o) {
 		return items.compareTo(o.items);
 	}
 
+	@Override
 	public String toString() {
 		return value;
 	}
 
+	@Override
 	public boolean equals(Object o) {
 		return (o instanceof ComparableVersion)
 				&& canonical.equals(((ComparableVersion) o).canonical);
 	}
 
+	@Override
 	public int hashCode() {
 		return canonical.hashCode();
 	}

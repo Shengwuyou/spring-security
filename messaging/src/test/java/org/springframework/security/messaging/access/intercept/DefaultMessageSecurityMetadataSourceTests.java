@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.messaging.Message;
 import org.springframework.security.access.ConfigAttribute;
 import org.springframework.security.access.SecurityConfig;
@@ -54,7 +54,7 @@ public class DefaultMessageSecurityMetadataSourceTests {
 
 	@Before
 	public void setup() {
-		messageMap = new LinkedHashMap<MessageMatcher<?>, Collection<ConfigAttribute>>();
+		messageMap = new LinkedHashMap<>();
 		messageMap.put(matcher1, Arrays.<ConfigAttribute> asList(config1));
 		messageMap.put(matcher2, Arrays.<ConfigAttribute> asList(config2));
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,6 +27,9 @@ import org.springframework.util.Assert;
  * should be requested during a fetch request, or to hold values for an attribute which
  * are returned during the authentication process.
  *
+ * @deprecated The OpenID 1.0 and 2.0 protocols have been deprecated and users are
+ * <a href="https://openid.net/specs/openid-connect-migration-1_0.html">encouraged to migrate</a>
+ * to <a href="https://openid.net/connect/">OpenID Connect</a>, which is supported by <code>spring-security-oauth2</code>.
  * @author Luke Taylor
  * @since 3.0
  */
@@ -98,6 +101,7 @@ public class OpenIDAttribute implements Serializable {
 		return values;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder result = new StringBuilder("[");
 		result.append(name);

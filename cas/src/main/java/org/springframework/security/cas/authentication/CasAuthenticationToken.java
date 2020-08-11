@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -122,6 +122,7 @@ public class CasAuthenticationToken extends AbstractAuthenticationToken implemen
 		return key.hashCode();
 	}
 
+	@Override
 	public boolean equals(final Object obj) {
 		if (!super.equals(obj)) {
 			return false;
@@ -144,6 +145,18 @@ public class CasAuthenticationToken extends AbstractAuthenticationToken implemen
 		return false;
 	}
 
+	@Override
+	public int hashCode() {
+		int result = super.hashCode();
+		result = 31 * result + this.credentials.hashCode();
+		result = 31 * result + this.principal.hashCode();
+		result = 31 * result + this.userDetails.hashCode();
+		result = 31 * result + this.keyHash;
+		result = 31 * result + (this.assertion != null ? this.assertion.hashCode() : 0);
+		return result;
+	}
+
+	@Override
 	public Object getCredentials() {
 		return this.credentials;
 	}
@@ -152,6 +165,7 @@ public class CasAuthenticationToken extends AbstractAuthenticationToken implemen
 		return this.keyHash;
 	}
 
+	@Override
 	public Object getPrincipal() {
 		return this.principal;
 	}
@@ -164,6 +178,7 @@ public class CasAuthenticationToken extends AbstractAuthenticationToken implemen
 		return userDetails;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(super.toString());

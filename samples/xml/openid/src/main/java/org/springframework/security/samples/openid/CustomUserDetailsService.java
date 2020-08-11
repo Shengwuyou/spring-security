@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,13 +32,16 @@ import org.springframework.security.openid.OpenIDAuthenticationToken;
  * Custom UserDetailsService which accepts any OpenID user, "registering" new users in a
  * map so they can be welcomed back to the site on subsequent logins.
  *
+ * @deprecated The OpenID 1.0 and 2.0 protocols have been deprecated and users are
+ *  <a href="https://openid.net/specs/openid-connect-migration-1_0.html">encouraged to migrate</a>
+ *  to <a href="https://openid.net/connect/">OpenID Connect</a>, which is supported by <code>spring-security-oauth2</code>.
  * @author Luke Taylor
  * @since 3.1
  */
 public class CustomUserDetailsService implements UserDetailsService,
 		AuthenticationUserDetailsService<OpenIDAuthenticationToken> {
 
-	private final Map<String, CustomUserDetails> registeredUsers = new HashMap<String, CustomUserDetails>();
+	private final Map<String, CustomUserDetails> registeredUsers = new HashMap<>();
 
 	private static final List<GrantedAuthority> DEFAULT_AUTHORITIES = AuthorityUtils
 			.createAuthorityList("ROLE_USER");

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,15 +21,14 @@ import java.net.ServerSocket;
 import org.springframework.ldap.core.support.BaseLdapPathContextSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.encoding.PasswordEncoder;
-import org.springframework.security.authentication.encoding.PlaintextPasswordEncoder;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.authentication.ProviderManagerBuilder;
 import org.springframework.security.config.annotation.web.configurers.ChannelSecurityConfigurer;
-import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.ldap.DefaultSpringSecurityContextSource;
 import org.springframework.security.ldap.authentication.AbstractLdapAuthenticator;
 import org.springframework.security.ldap.authentication.BindAuthenticator;
@@ -39,6 +38,7 @@ import org.springframework.security.ldap.authentication.PasswordComparisonAuthen
 import org.springframework.security.ldap.search.FilterBasedLdapUserSearch;
 import org.springframework.security.ldap.search.LdapUserSearch;
 import org.springframework.security.ldap.server.ApacheDSContainer;
+import org.springframework.security.ldap.server.UnboundIdContainer;
 import org.springframework.security.ldap.userdetails.DefaultLdapAuthoritiesPopulator;
 import org.springframework.security.ldap.userdetails.InetOrgPersonContextMapper;
 import org.springframework.security.ldap.userdetails.LdapAuthoritiesPopulator;
@@ -46,6 +46,7 @@ import org.springframework.security.ldap.userdetails.LdapUserDetailsMapper;
 import org.springframework.security.ldap.userdetails.PersonContextMapper;
 import org.springframework.security.ldap.userdetails.UserDetailsContextMapper;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 
 /**
  * Configures LDAP {@link AuthenticationProvider} in the {@link ProviderManagerBuilder}.
@@ -60,15 +61,16 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 		extends SecurityConfigurerAdapter<AuthenticationManager, B> {
 	private String groupRoleAttribute = "cn";
 	private String groupSearchBase = "";
+	private boolean groupSearchSubtree = false;
 	private String groupSearchFilter = "(uniqueMember={0})";
 	private String rolePrefix = "ROLE_";
 	private String userSearchBase = ""; // only for search
-	private String userSearchFilter = null;// "uid={0}"; // only for search
+	private String userSearchFilter = null; // "uid={0}"; // only for search
 	private String[] userDnPatterns;
 	private BaseLdapPathContextSource contextSource;
 	private ContextSourceBuilder contextSourceBuilder = new ContextSourceBuilder();
 	private UserDetailsContextMapper userDetailsContextMapper;
-	private Object passwordEncoder;
+	private PasswordEncoder passwordEncoder;
 	private String passwordAttribute;
 	private LdapAuthoritiesPopulator ldapAuthoritiesPopulator;
 	private GrantedAuthoritiesMapper authoritiesMapper;
@@ -129,6 +131,7 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 				contextSource, groupSearchBase);
 		defaultAuthoritiesPopulator.setGroupRoleAttribute(groupRoleAttribute);
 		defaultAuthoritiesPopulator.setGroupSearchFilter(groupSearchFilter);
+		defaultAuthoritiesPopulator.setSearchSubtree(groupSearchSubtree);
 		defaultAuthoritiesPopulator.setRolePrefix(this.rolePrefix);
 
 		this.ldapAuthoritiesPopulator = defaultAuthoritiesPopulator;
@@ -157,7 +160,7 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 	 * @throws Exception if errors in {@link SimpleAuthorityMapper#afterPropertiesSet()}
 	 */
 	protected GrantedAuthoritiesMapper getAuthoritiesMapper() throws Exception {
-		if(authoritiesMapper != null) {
+		if (authoritiesMapper != null) {
 			return authoritiesMapper;
 		}
 
@@ -249,22 +252,6 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 	}
 
 	/**
-	 * Specifies the {@link PasswordEncoder} to be used when authenticating with password
-	 * comparison.
-	 *
-	 * @param passwordEncoder the {@link PasswordEncoder} to use
-	 * @return the {@link LdapAuthenticationProviderConfigurer} for further customization
-	 * @deprecated Use
-	 * {@link #passwordEncoder(org.springframework.security.crypto.password.PasswordEncoder)}
-	 * instead
-	 */
-	public LdapAuthenticationProviderConfigurer<B> passwordEncoder(
-			PasswordEncoder passwordEncoder) {
-		this.passwordEncoder = passwordEncoder;
-		return this;
-	}
-
-	/**
 	 * Specifies the {@link org.springframework.security.crypto.password.PasswordEncoder}
 	 * to be used when authenticating with password comparison.
 	 *
@@ -317,7 +304,7 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 	/**
 	 * Specifies the attribute name which contains the role name. Default is "cn".
 	 * @param groupRoleAttribute the attribute name that maps a group to a role.
-	 * @return
+	 * @return the {@link LdapAuthenticationProviderConfigurer} for further customizations
 	 */
 	public LdapAuthenticationProviderConfigurer<B> groupRoleAttribute(
 			String groupRoleAttribute) {
@@ -332,6 +319,19 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 	 */
 	public LdapAuthenticationProviderConfigurer<B> groupSearchBase(String groupSearchBase) {
 		this.groupSearchBase = groupSearchBase;
+		return this;
+	}
+
+	/**
+	 * If set to true, a subtree scope search will be performed for group membership. If false a
+	 * single-level search is used.
+	 *
+	 * @param searchSubtree set to true to enable searching of the entire tree below the
+	 *                      <tt>groupSearchBase</tt>.
+	 * @return the {@link LdapAuthenticationProviderConfigurer} for further customizations
+	 */
+	public LdapAuthenticationProviderConfigurer<B> groupSearchSubtree(boolean groupSearchSubtree) {
+		this.groupSearchSubtree = groupSearchSubtree;
 		return this;
 	}
 
@@ -401,9 +401,9 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 
 		/**
 		 * Allows specifying the {@link PasswordEncoder} to use. The default is
-		 * {@link PlaintextPasswordEncoder}.
+		 * {@link org.springframework.security.crypto.password.NoOpPasswordEncoder}.
 		 * @param passwordEncoder the {@link PasswordEncoder} to use
-		 * @return the {@link PasswordEncoder} to use
+		 * @return the {@link PasswordCompareConfigurer} for further customizations
 		 */
 		public PasswordCompareConfigurer passwordEncoder(PasswordEncoder passwordEncoder) {
 			LdapAuthenticationProviderConfigurer.this.passwordEncoder = passwordEncoder;
@@ -442,14 +442,20 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 	 * embedded LDAP instance.
 	 *
 	 * @author Rob Winch
+	 * @author Evgeniy Cheban
 	 * @since 3.2
 	 */
 	public final class ContextSourceBuilder {
+		private static final String APACHEDS_CLASSNAME = "org.apache.directory.server.core.DefaultDirectoryService";
+		private static final String UNBOUNDID_CLASSNAME = "com.unboundid.ldap.listener.InMemoryDirectoryServer";
+
+		private static final int DEFAULT_PORT = 33389;
+		private static final int RANDOM_PORT = 0;
+
 		private String ldif = "classpath*:*.ldif";
 		private String managerPassword;
 		private String managerDn;
 		private Integer port;
-		private static final int DEFAULT_PORT = 33389;
 		private String root = "dc=springframework,dc=org";
 		private String url;
 
@@ -493,6 +499,9 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 		/**
 		 * The port to connect to LDAP to (the default is 33389 or random available port
 		 * if unavailable).
+		 *
+		 * Supplying 0 as the port indicates that a random available port should be selected.
+		 *
 		 * @param port the port to connect to
 		 * @return the {@link ContextSourceBuilder} for further customization
 		 */
@@ -537,6 +546,10 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 		}
 
 		private DefaultSpringSecurityContextSource build() throws Exception {
+			if (this.url == null) {
+				startEmbeddedLdapServer();
+			}
+
 			DefaultSpringSecurityContextSource contextSource = new DefaultSpringSecurityContextSource(
 					getProviderUrl());
 			if (managerDn != null) {
@@ -548,13 +561,25 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 				contextSource.setPassword(managerPassword);
 			}
 			contextSource = postProcess(contextSource);
-			if (url != null) {
-				return contextSource;
-			}
-			ApacheDSContainer apacheDsContainer = new ApacheDSContainer(root, ldif);
-			apacheDsContainer.setPort(getPort());
-			postProcess(apacheDsContainer);
 			return contextSource;
+		}
+
+		private void startEmbeddedLdapServer() throws Exception {
+			if (ClassUtils.isPresent(APACHEDS_CLASSNAME, getClass().getClassLoader())) {
+				ApacheDSContainer apacheDsContainer = new ApacheDSContainer(this.root, this.ldif);
+				apacheDsContainer.setPort(getPort());
+				postProcess(apacheDsContainer);
+				this.port = apacheDsContainer.getLocalPort();
+			}
+			else if (ClassUtils.isPresent(UNBOUNDID_CLASSNAME, getClass().getClassLoader())) {
+				UnboundIdContainer unboundIdContainer = new UnboundIdContainer(this.root, this.ldif);
+				unboundIdContainer.setPort(getPort());
+				postProcess(unboundIdContainer);
+				this.port = unboundIdContainer.getPort();
+			}
+			else {
+				throw new IllegalStateException("Embedded LDAP server is not provided");
+			}
 		}
 
 		private int getPort() {
@@ -565,29 +590,10 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 		}
 
 		private int getDefaultPort() {
-			ServerSocket serverSocket = null;
-			try {
-				try {
-					serverSocket = new ServerSocket(DEFAULT_PORT);
-				}
-				catch (IOException e) {
-					try {
-						serverSocket = new ServerSocket(0);
-					}
-					catch (IOException e2) {
-						return DEFAULT_PORT;
-					}
-				}
+			try (ServerSocket serverSocket = new ServerSocket(DEFAULT_PORT)) {
 				return serverSocket.getLocalPort();
-			}
-			finally {
-				if (serverSocket != null) {
-					try {
-						serverSocket.close();
-					}
-					catch (IOException e) {
-					}
-				}
+			} catch (IOException e) {
+				return RANDOM_PORT;
 			}
 		}
 
@@ -610,10 +616,10 @@ public class LdapAuthenticationProviderConfigurer<B extends ProviderManagerBuild
 	}
 
 	/**
-	 * @return
+	 * @return the {@link PasswordCompareConfigurer} for further customizations
 	 */
 	public PasswordCompareConfigurer passwordCompare() {
 		return new PasswordCompareConfigurer().passwordAttribute("password")
-				.passwordEncoder(new PlaintextPasswordEncoder());
+				.passwordEncoder(NoOpPasswordEncoder.getInstance());
 	}
 }

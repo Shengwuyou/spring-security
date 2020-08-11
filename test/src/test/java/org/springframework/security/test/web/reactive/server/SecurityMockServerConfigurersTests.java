@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,18 @@ package org.springframework.security.test.web.reactive.server;
 
 import org.junit.Test;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.server.context.SecurityContextServerWebExchangeWebFilter;
+import org.springframework.security.web.server.csrf.CsrfWebFilter;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.security.Principal;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.*;
 
 /**
@@ -35,54 +39,11 @@ import static org.springframework.security.test.web.reactive.server.SecurityMock
 public class SecurityMockServerConfigurersTests extends AbstractMockServerConfigurersTests {
 	WebTestClient client = WebTestClient
 		.bindToController(controller)
+		.webFilter( new CsrfWebFilter(), new SecurityContextServerWebExchangeWebFilter())
 		.apply(springSecurity())
 		.configureClient()
 		.defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
 		.build();
-
-	@Test
-	public void mockPrincipalWhenLocalThenSuccess() {
-		Principal principal = () -> "principal";
-		client
-			.mutateWith(mockPrincipal(principal))
-			.get()
-			.exchange()
-			.expectStatus().isOk();
-
-		controller.assertPrincipalIsEqualTo(principal);
-	}
-
-	@Test
-	public void mockPrincipalWhenGlobalTheWorks() {
-		Principal principal = () -> "principal";
-		client = WebTestClient
-			.bindToController(controller)
-			.apply(springSecurity())
-			.apply(mockPrincipal(principal))
-			.configureClient()
-			.defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-			.build();
-
-		client
-			.get()
-			.exchange()
-			.expectStatus().isOk();
-
-		controller.assertPrincipalIsEqualTo(principal);
-	}
-
-	@Test
-	public void mockPrincipalWhenMultipleInvocationsThenLastInvocationWins() {
-		Principal principal = () -> "principal";
-		client
-			.mutateWith(mockPrincipal(() -> "will be overridden"))
-			.mutateWith(mockPrincipal(principal))
-			.get()
-			.exchange()
-			.expectStatus().isOk();
-
-		controller.assertPrincipalIsEqualTo(principal);
-	}
 
 	@Test
 	public void mockAuthenticationWhenLocalThenSuccess() {
@@ -100,6 +61,7 @@ public class SecurityMockServerConfigurersTests extends AbstractMockServerConfig
 		TestingAuthenticationToken authentication = new TestingAuthenticationToken("authentication", "secret", "ROLE_USER");
 		client = WebTestClient
 			.bindToController(controller)
+			.webFilter(new SecurityContextServerWebExchangeWebFilter())
 			.apply(springSecurity())
 			.apply(mockAuthentication(authentication))
 			.configureClient()
@@ -129,6 +91,7 @@ public class SecurityMockServerConfigurersTests extends AbstractMockServerConfig
 	public void mockUserWhenGlobalThenSuccess() {
 		client = WebTestClient
 			.bindToController(controller)
+			.webFilter(new SecurityContextServerWebExchangeWebFilter())
 			.apply(springSecurity())
 			.apply(mockUser())
 			.configureClient()
@@ -183,5 +146,38 @@ public class SecurityMockServerConfigurersTests extends AbstractMockServerConfig
 		Principal actual = controller.removePrincipal();
 
 		assertPrincipalCreatedFromUserDetails(actual, userBuilder.build());
+	}
+
+	@Test
+	public void csrfWhenMutateWithThenDisablesCsrf() {
+		this.client
+			.post()
+			.exchange()
+			.expectStatus().isEqualTo(HttpStatus.FORBIDDEN)
+			.expectBody().consumeWith( b -> assertThat(new String(b.getResponseBody())).contains("CSRF"));
+
+		this.client
+			.mutateWith(csrf())
+			.post()
+			.exchange()
+			.expectStatus().isOk();
+
+	}
+
+	@Test
+	public void csrfWhenGlobalThenDisablesCsrf() {
+		this.client = WebTestClient
+			.bindToController(this.controller)
+			.webFilter(new CsrfWebFilter())
+			.apply(springSecurity())
+			.apply(csrf())
+			.configureClient()
+			.build();
+
+		this.client
+			.get()
+			.exchange()
+			.expectStatus().isOk();
+
 	}
 }

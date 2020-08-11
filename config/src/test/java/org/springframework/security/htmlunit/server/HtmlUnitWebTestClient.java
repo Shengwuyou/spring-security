@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,8 +18,6 @@ package org.springframework.security.htmlunit.server;
 
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +29,6 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebRequest;
 
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
-import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
@@ -54,7 +51,7 @@ final class HtmlUnitWebTestClient {
 
 	private final WebTestClient webTestClient;
 
-	public HtmlUnitWebTestClient(WebClient webClient, WebTestClient webTestClient) {
+	HtmlUnitWebTestClient(WebClient webClient, WebTestClient webTestClient) {
 		Assert.notNull(webClient, "WebClient must not be null");
 		Assert.notNull(webTestClient, "WebTestClient must not be null");
 		this.webClient = webClient;
@@ -80,7 +77,7 @@ final class HtmlUnitWebTestClient {
 		String requestBody = webRequest.getRequestBody();
 		if (requestBody == null) {
 			List<NameValuePair> params = webRequest.getRequestParameters();
-			if(params != null && !params.isEmpty()) {
+			if (params != null && !params.isEmpty()) {
 				return request.body(BodyInserters.fromFormData(formData(params)));
 			}
 			return request;
@@ -88,8 +85,8 @@ final class HtmlUnitWebTestClient {
 		return request.body(BodyInserters.fromObject(requestBody));
 	}
 
-	private MultiValueMap<String,String> formData(List<NameValuePair> params) {
-		MultiValueMap<String,String> result = new LinkedMultiValueMap<>(params.size());
+	private MultiValueMap<String, String> formData(List<NameValuePair> params) {
+		MultiValueMap<String, String> result = new LinkedMultiValueMap<>(params.size());
 		params.forEach( pair -> result.add(pair.getName(), pair.getValue()));
 		return result;
 	}
@@ -132,7 +129,7 @@ final class HtmlUnitWebTestClient {
 	}
 
 	private void headers(WebTestClient.RequestBodySpec request, WebRequest webRequest) {
-		webRequest.getAdditionalHeaders().forEach( (name,value) -> request.header(name, value));
+		webRequest.getAdditionalHeaders().forEach( (name, value) -> request.header(name, value));
 	}
 
 	private HttpMethod httpMethod(WebRequest webRequest) {
@@ -154,8 +151,14 @@ final class HtmlUnitWebTestClient {
 
 		private Mono<ClientResponse> redirectIfNecessary(ClientRequest request, ExchangeFunction next, ClientResponse response) {
 			URI location = response.headers().asHttpHeaders().getLocation();
-			if(location != null) {
-				ClientRequest redirect = ClientRequest.method(HttpMethod.GET, URI.create("http://localhost" + location.toASCIIString()))
+			String host = request.url().getHost();
+			String scheme = request.url().getScheme();
+			if (location != null) {
+				String redirectUrl = location.toASCIIString();
+				if (location.getHost() == null) {
+					redirectUrl = scheme+ "://" + host + location.toASCIIString();
+				}
+				ClientRequest redirect = ClientRequest.method(HttpMethod.GET, URI.create(redirectUrl))
 					.headers(headers -> headers.addAll(request.headers()))
 					.cookies(cookies -> cookies.addAll(request.cookies()))
 					.attributes(attributes -> attributes.putAll(request.attributes()))
@@ -177,7 +180,7 @@ final class HtmlUnitWebTestClient {
 				.doOnSuccess( response -> {
 					response.cookies().values().forEach( cookies -> {
 						cookies.forEach( cookie -> {
-							if(cookie.getMaxAge().isZero()) {
+							if (cookie.getMaxAge().isZero()) {
 								this.cookies.remove(cookie.getName());
 							} else {
 								this.cookies.put(cookie.getName(), cookie);
@@ -194,8 +197,8 @@ final class HtmlUnitWebTestClient {
 				}).build();
 		}
 
-		private MultiValueMap<String,String> clientCookies() {
-			MultiValueMap<String,String> result = new LinkedMultiValueMap<>(this.cookies.size());
+		private MultiValueMap<String, String> clientCookies() {
+			MultiValueMap<String, String> result = new LinkedMultiValueMap<>(this.cookies.size());
 			this.cookies.values().forEach( cookie ->
 				result.add(cookie.getName(), cookie.getValue())
 			);

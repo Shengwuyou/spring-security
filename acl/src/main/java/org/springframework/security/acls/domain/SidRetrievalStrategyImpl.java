@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -57,7 +57,7 @@ public class SidRetrievalStrategyImpl implements SidRetrievalStrategy {
 	public List<Sid> getSids(Authentication authentication) {
 		Collection<? extends GrantedAuthority> authorities = roleHierarchy
 				.getReachableGrantedAuthorities(authentication.getAuthorities());
-		List<Sid> sids = new ArrayList<Sid>(authorities.size() + 1);
+		List<Sid> sids = new ArrayList<>(authorities.size() + 1);
 
 		sids.add(new PrincipalSid(authentication));
 

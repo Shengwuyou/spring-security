@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,19 +17,31 @@ package org.springframework.security.test.web.servlet.request;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.nimbusds.oauth2.sdk.util.StringUtils;
+
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -45,19 +57,55 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.method.annotation.OAuth2AuthorizedClientArgumentResolver;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
+import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames;
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
+import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.introspection.OAuth2IntrospectionAuthenticatedPrincipal;
+import org.springframework.security.oauth2.server.resource.introspection.OAuth2IntrospectionClaimNames;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.security.test.web.support.WebTestUtils;
 import org.springframework.security.web.context.HttpRequestResponseHolder;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.context.support.WebApplicationContextUtils;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
+
+import static java.lang.Boolean.TRUE;
+import static org.springframework.security.oauth2.jwt.JwtClaimNames.SUB;
 
 /**
  * Contains {@link MockMvc} {@link RequestPostProcessor} implementations for Spring
@@ -196,6 +244,61 @@ public final class SecurityMockMvcRequestPostProcessors {
 	}
 
 	/**
+	 * Establish a {@link SecurityContext} that has a
+	 * {@link JwtAuthenticationToken} for the
+	 * {@link Authentication} and a {@link Jwt} for the
+	 * {@link Authentication#getPrincipal()}. All details are
+	 * declarative and do not require the JWT to be valid.
+	 *
+	 * <p>
+	 * The support works by associating the authentication to the HttpServletRequest. To associate
+	 * the request to the SecurityContextHolder you need to ensure that the
+	 * SecurityContextPersistenceFilter is associated with the MockMvc instance. A few
+	 * ways to do this are:
+	 * </p>
+	 *
+	 * <ul>
+	 * <li>Invoking apply {@link SecurityMockMvcConfigurers#springSecurity()}</li>
+	 * <li>Adding Spring Security's FilterChainProxy to MockMvc</li>
+	 * <li>Manually adding {@link SecurityContextPersistenceFilter} to the MockMvc
+	 * instance may make sense when using MockMvcBuilders standaloneSetup</li>
+	 * </ul>
+	 *
+	 * @return the {@link JwtRequestPostProcessor} for additional customization
+	 */
+	public static JwtRequestPostProcessor jwt() {
+		return new JwtRequestPostProcessor();
+	}
+
+	/**
+	 * Establish a {@link SecurityContext} that has a
+	 * {@link BearerTokenAuthentication} for the
+	 * {@link Authentication} and a {@link OAuth2AuthenticatedPrincipal} for the
+	 * {@link Authentication#getPrincipal()}. All details are
+	 * declarative and do not require the token to be valid
+	 *
+	 * <p>
+	 * The support works by associating the authentication to the HttpServletRequest. To associate
+	 * the request to the SecurityContextHolder you need to ensure that the
+	 * SecurityContextPersistenceFilter is associated with the MockMvc instance. A few
+	 * ways to do this are:
+	 * </p>
+	 *
+	 * <ul>
+	 * <li>Invoking apply {@link SecurityMockMvcConfigurers#springSecurity()}</li>
+	 * <li>Adding Spring Security's FilterChainProxy to MockMvc</li>
+	 * <li>Manually adding {@link SecurityContextPersistenceFilter} to the MockMvc
+	 * instance may make sense when using MockMvcBuilders standaloneSetup</li>
+	 * </ul>
+	 *
+	 * @return the {@link OpaqueTokenRequestPostProcessor} for additional customization
+	 * @since 5.3
+	 */
+	public static OpaqueTokenRequestPostProcessor opaqueToken() {
+		return new OpaqueTokenRequestPostProcessor();
+	}
+
+	/**
 	 * Establish a {@link SecurityContext} that uses the specified {@link Authentication}
 	 * for the {@link Authentication#getPrincipal()} and a custom {@link UserDetails}. All
 	 * details are declarative and do not require that the user actually exists.
@@ -277,6 +380,99 @@ public final class SecurityMockMvcRequestPostProcessors {
 	 */
 	public static RequestPostProcessor httpBasic(String username, String password) {
 		return new HttpBasicRequestPostProcessor(username, password);
+	}
+
+	/**
+	 * Establish a {@link SecurityContext} that has a
+	 * {@link OAuth2AuthenticationToken} for the
+	 * {@link Authentication}, a {@link OAuth2User} as the principal,
+	 * and a {@link OAuth2AuthorizedClient} in the session. All details are
+	 * declarative and do not require associated tokens to be valid.
+	 *
+	 * <p>
+	 * The support works by associating the authentication to the HttpServletRequest. To associate
+	 * the request to the SecurityContextHolder you need to ensure that the
+	 * SecurityContextPersistenceFilter is associated with the MockMvc instance. A few
+	 * ways to do this are:
+	 * </p>
+	 *
+	 * <ul>
+	 * <li>Invoking apply {@link SecurityMockMvcConfigurers#springSecurity()}</li>
+	 * <li>Adding Spring Security's FilterChainProxy to MockMvc</li>
+	 * <li>Manually adding {@link SecurityContextPersistenceFilter} to the MockMvc
+	 * instance may make sense when using MockMvcBuilders standaloneSetup</li>
+	 * </ul>
+	 *
+	 * @return the {@link OidcLoginRequestPostProcessor} for additional customization
+	 * @since 5.3
+	 */
+	public static OAuth2LoginRequestPostProcessor oauth2Login() {
+		OAuth2AccessToken accessToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "access-token",
+				null, null, Collections.singleton("read"));
+		return new OAuth2LoginRequestPostProcessor(accessToken);
+	}
+
+	/**
+	 * Establish a {@link SecurityContext} that has a
+	 * {@link OAuth2AuthenticationToken} for the
+	 * {@link Authentication}, a {@link OidcUser} as the principal,
+	 * and a {@link OAuth2AuthorizedClient} in the session. All details are
+	 * declarative and do not require associated tokens to be valid.
+	 *
+	 * <p>
+	 * The support works by associating the authentication to the HttpServletRequest. To associate
+	 * the request to the SecurityContextHolder you need to ensure that the
+	 * SecurityContextPersistenceFilter is associated with the MockMvc instance. A few
+	 * ways to do this are:
+	 * </p>
+	 *
+	 * <ul>
+	 * <li>Invoking apply {@link SecurityMockMvcConfigurers#springSecurity()}</li>
+	 * <li>Adding Spring Security's FilterChainProxy to MockMvc</li>
+	 * <li>Manually adding {@link SecurityContextPersistenceFilter} to the MockMvc
+	 * instance may make sense when using MockMvcBuilders standaloneSetup</li>
+	 * </ul>
+	 *
+	 * @return the {@link OidcLoginRequestPostProcessor} for additional customization
+	 * @since 5.3
+	 */
+	public static OidcLoginRequestPostProcessor oidcLogin() {
+		OAuth2AccessToken accessToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "access-token",
+				null, null, Collections.singleton("read"));
+		return new OidcLoginRequestPostProcessor(accessToken);
+	}
+
+	/**
+	 * Establish an {@link OAuth2AuthorizedClient} in the session. All details are
+	 * declarative and do not require associated tokens to be valid.
+	 *
+	 * <p>
+	 * The support works by associating the authorized client to the HttpServletRequest
+	 * via the {@link HttpSessionOAuth2AuthorizedClientRepository}
+	 * </p>
+	 *
+	 * @return the {@link OAuth2ClientRequestPostProcessor} for additional customization
+	 * @since 5.3
+	 */
+	public static OAuth2ClientRequestPostProcessor oauth2Client() {
+		return new OAuth2ClientRequestPostProcessor();
+	}
+
+	/**
+	 * Establish an {@link OAuth2AuthorizedClient} in the session. All details are
+	 * declarative and do not require associated tokens to be valid.
+	 *
+	 * <p>
+	 * The support works by associating the authorized client to the HttpServletRequest
+	 * via the {@link HttpSessionOAuth2AuthorizedClientRepository}
+	 * </p>
+	 *
+	 * @param registrationId The registration id for the {@link OAuth2AuthorizedClient}
+	 * @return the {@link OAuth2ClientRequestPostProcessor} for additional customization
+	 * @since 5.3
+	 */
+	public static OAuth2ClientRequestPostProcessor oauth2Client(String registrationId) {
+		return new OAuth2ClientRequestPostProcessor(registrationId);
 	}
 
 	/**
@@ -375,7 +571,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 
 			private final CsrfTokenRepository delegate;
 
-			private TestCsrfTokenRepository(CsrfTokenRepository delegate) {
+			TestCsrfTokenRepository(CsrfTokenRepository delegate) {
 				this.delegate = delegate;
 			}
 
@@ -406,11 +602,11 @@ public final class SecurityMockMvcRequestPostProcessors {
 			}
 
 			public static void enable(HttpServletRequest request) {
-				request.setAttribute(ENABLED_ATTR_NAME, Boolean.TRUE);
+				request.setAttribute(ENABLED_ATTR_NAME, TRUE);
 			}
 
 			public boolean isEnabled(HttpServletRequest request) {
-				return Boolean.TRUE.equals(request.getAttribute(ENABLED_ATTR_NAME));
+				return TRUE.equals(request.getAttribute(ENABLED_ATTR_NAME));
 			}
 		}
 	}
@@ -542,12 +738,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 		}
 
 		private static String md5Hex(String a2) {
-			try {
-				return DigestUtils.md5DigestAsHex(a2.getBytes("UTF-8"));
-			}
-			catch (UnsupportedEncodingException e) {
-				throw new RuntimeException(e);
-			}
+			return DigestUtils.md5DigestAsHex(a2.getBytes(StandardCharsets.UTF_8));
 		}
 	}
 
@@ -735,7 +926,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 			implements RequestPostProcessor {
 		private final RequestPostProcessor delegate;
 
-		public UserDetailsRequestPostProcessor(UserDetails user) {
+		UserDetailsRequestPostProcessor(UserDetails user) {
 			Authentication token = new UsernamePasswordAuthenticationToken(user,
 					user.getPassword(), user.getAuthorities());
 
@@ -796,7 +987,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 		 * @return the UserRequestPostProcessor for further customizations
 		 */
 		public UserRequestPostProcessor roles(String... roles) {
-			List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>(
+			List<GrantedAuthority> authorities = new ArrayList<>(
 					roles.length);
 			for (String role : roles) {
 				if (role.startsWith(ROLE_PREFIX)) {
@@ -889,12 +1080,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 
 		private HttpBasicRequestPostProcessor(String username, String password) {
 			byte[] toEncode;
-			try {
-				toEncode = (username + ":" + password).getBytes("UTF-8");
-			}
-			catch (UnsupportedEncodingException e) {
-				throw new RuntimeException(e);
-			}
+			toEncode = (username + ":" + password).getBytes(StandardCharsets.UTF_8);
 			this.headerValue = "Basic " + new String(Base64.getEncoder().encode(toEncode));
 		}
 
@@ -902,6 +1088,731 @@ public final class SecurityMockMvcRequestPostProcessors {
 		public MockHttpServletRequest postProcessRequest(MockHttpServletRequest request) {
 			request.addHeader("Authorization", this.headerValue);
 			return request;
+		}
+	}
+
+	/**
+	 * @author Jérôme Wacongne &lt;ch4mp&#64;c4-soft.com&gt;
+	 * @author Josh Cummings
+	 * @since 5.2
+	 */
+	public final static class JwtRequestPostProcessor implements RequestPostProcessor {
+		private Jwt jwt;
+		private Converter<Jwt, Collection<GrantedAuthority>> authoritiesConverter =
+				new JwtGrantedAuthoritiesConverter();
+
+		private JwtRequestPostProcessor() {
+			this.jwt((jwt) -> {});
+		}
+
+		/**
+		 * Use the given {@link Jwt.Builder} {@link Consumer} to configure the underlying {@link Jwt}
+		 *
+		 * This method first creates a default {@link Jwt.Builder} instance with default values for
+		 * the {@code alg}, {@code sub}, and {@code scope} claims. The {@link Consumer} can then modify
+		 * these or provide additional configuration.
+		 *
+		 * Calling {@link SecurityMockMvcRequestPostProcessors#jwt()} is the equivalent of calling
+		 * {@code SecurityMockMvcRequestPostProcessors.jwt().jwt(() -> {})}.
+		 *
+		 * @param jwtBuilderConsumer For configuring the underlying {@link Jwt}
+		 * @return the {@link JwtRequestPostProcessor} for additional customization
+		 */
+		public JwtRequestPostProcessor jwt(Consumer<Jwt.Builder> jwtBuilderConsumer) {
+			Jwt.Builder jwtBuilder = Jwt.withTokenValue("token")
+					.header("alg", "none")
+					.claim(SUB, "user")
+					.claim("scope", "read");
+			jwtBuilderConsumer.accept(jwtBuilder);
+			this.jwt = jwtBuilder.build();
+			return this;
+		}
+
+		/**
+		 * Use the given {@link Jwt}
+		 *
+		 * @param jwt The {@link Jwt} to use
+		 * @return the {@link JwtRequestPostProcessor} for additional customization
+		 */
+		public JwtRequestPostProcessor jwt(Jwt jwt) {
+			this.jwt = jwt;
+			return this;
+		}
+
+		/**
+		 * Use the provided authorities in the token
+		 * @param authorities the authorities to use
+		 * @return the {@link JwtRequestPostProcessor} for further configuration
+		 */
+		public JwtRequestPostProcessor authorities(Collection<GrantedAuthority> authorities) {
+			Assert.notNull(authorities, "authorities cannot be null");
+			this.authoritiesConverter = jwt -> authorities;
+			return this;
+		}
+
+		/**
+		 * Use the provided authorities in the token
+		 * @param authorities the authorities to use
+		 * @return the {@link JwtRequestPostProcessor} for further configuration
+		 */
+		public JwtRequestPostProcessor authorities(GrantedAuthority... authorities) {
+			Assert.notNull(authorities, "authorities cannot be null");
+			this.authoritiesConverter = jwt -> Arrays.asList(authorities);
+			return this;
+		}
+
+		/**
+		 * Provides the configured {@link Jwt} so that custom authorities can be derived
+		 * from it
+		 *
+		 * @param authoritiesConverter the conversion strategy from {@link Jwt} to a {@link Collection}
+		 * of {@link GrantedAuthority}s
+		 * @return the {@link JwtRequestPostProcessor} for further configuration
+		 */
+		public JwtRequestPostProcessor authorities(Converter<Jwt, Collection<GrantedAuthority>> authoritiesConverter) {
+			Assert.notNull(authoritiesConverter, "authoritiesConverter cannot be null");
+			this.authoritiesConverter = authoritiesConverter;
+			return this;
+		}
+
+		@Override
+		public MockHttpServletRequest postProcessRequest(MockHttpServletRequest request) {
+			CsrfFilter.skipRequest(request);
+			JwtAuthenticationToken token = new JwtAuthenticationToken(this.jwt,
+					this.authoritiesConverter.convert(this.jwt));
+			return new AuthenticationRequestPostProcessor(token).postProcessRequest(request);
+		}
+
+	}
+
+	/**
+	 * @author Josh Cummings
+	 * @since 5.3
+	 */
+	public final static class OpaqueTokenRequestPostProcessor implements RequestPostProcessor {
+		private Supplier<Map<String, Object>> attributes = this::defaultAttributes;
+		private Supplier<Collection<GrantedAuthority>> authorities = this::defaultAuthorities;
+
+		private Supplier<OAuth2AuthenticatedPrincipal> principal = this::defaultPrincipal;
+
+		private OpaqueTokenRequestPostProcessor() { }
+
+		/**
+		 * Mutate the attributes using the given {@link Consumer}
+		 *
+		 * @param attributesConsumer The {@link Consumer} for mutating the {@Map} of attributes
+		 * @return the {@link OpaqueTokenRequestPostProcessor} for further configuration
+		 */
+		public OpaqueTokenRequestPostProcessor attributes(Consumer<Map<String, Object>> attributesConsumer) {
+			Assert.notNull(attributesConsumer, "attributesConsumer cannot be null");
+			this.attributes = () -> {
+				Map<String, Object> attributes = defaultAttributes();
+				attributesConsumer.accept(attributes);
+				return attributes;
+			};
+			this.principal = this::defaultPrincipal;
+			return this;
+		}
+
+		/**
+		 * Use the provided authorities in the resulting principal
+		 * @param authorities the authorities to use
+		 * @return the {@link OpaqueTokenRequestPostProcessor} for further configuration
+		 */
+		public OpaqueTokenRequestPostProcessor authorities(Collection<GrantedAuthority> authorities) {
+			Assert.notNull(authorities, "authorities cannot be null");
+			this.authorities = () -> authorities;
+			this.principal = this::defaultPrincipal;
+			return this;
+		}
+
+		/**
+		 * Use the provided authorities in the resulting principal
+		 * @param authorities the authorities to use
+		 * @return the {@link OpaqueTokenRequestPostProcessor} for further configuration
+		 */
+		public OpaqueTokenRequestPostProcessor authorities(GrantedAuthority... authorities) {
+			Assert.notNull(authorities, "authorities cannot be null");
+			this.authorities = () -> Arrays.asList(authorities);
+			this.principal = this::defaultPrincipal;
+			return this;
+		}
+
+		/**
+		 * Use the provided principal
+		 * @param principal the principal to use
+		 * @return the {@link OpaqueTokenRequestPostProcessor} for further configuration
+		 */
+		public OpaqueTokenRequestPostProcessor principal(OAuth2AuthenticatedPrincipal principal) {
+			Assert.notNull(principal, "principal cannot be null");
+			this.principal = () -> principal;
+			return this;
+		}
+
+		@Override
+		public MockHttpServletRequest postProcessRequest(MockHttpServletRequest request) {
+			CsrfFilter.skipRequest(request);
+			OAuth2AuthenticatedPrincipal principal = this.principal.get();
+			OAuth2AccessToken accessToken = getOAuth2AccessToken(principal);
+			BearerTokenAuthentication token = new BearerTokenAuthentication
+					(principal, accessToken, principal.getAuthorities());
+			return new AuthenticationRequestPostProcessor(token).postProcessRequest(request);
+		}
+
+		private Map<String, Object> defaultAttributes() {
+			Map<String, Object> attributes = new HashMap<>();
+			attributes.put(OAuth2IntrospectionClaimNames.SUBJECT, "user");
+			attributes.put(OAuth2IntrospectionClaimNames.SCOPE, "read");
+			return attributes;
+		}
+
+		private Collection<GrantedAuthority> defaultAuthorities() {
+			Map<String, Object> attributes = this.attributes.get();
+			Object scope = attributes.get(OAuth2IntrospectionClaimNames.SCOPE);
+			if (scope == null) {
+				return Collections.emptyList();
+			}
+			if (scope instanceof Collection) {
+				return getAuthorities((Collection) scope);
+			}
+			String scopes = scope.toString();
+			if (StringUtils.isBlank(scopes)) {
+				return Collections.emptyList();
+			}
+			return getAuthorities(Arrays.asList(scopes.split(" ")));
+		}
+
+		private OAuth2AuthenticatedPrincipal defaultPrincipal() {
+			return new OAuth2IntrospectionAuthenticatedPrincipal
+					(this.attributes.get(), this.authorities.get());
+		}
+
+		private Collection<GrantedAuthority> getAuthorities(Collection<?> scopes) {
+			return scopes.stream()
+					.map(scope -> new SimpleGrantedAuthority("SCOPE_" + scope))
+					.collect(Collectors.toList());
+		}
+
+		private OAuth2AccessToken getOAuth2AccessToken(OAuth2AuthenticatedPrincipal principal) {
+			Instant expiresAt = getInstant(principal.getAttributes(), "exp");
+			Instant issuedAt = getInstant(principal.getAttributes(), "iat");
+			return new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER,
+					"token", issuedAt, expiresAt);
+		}
+
+		private Instant getInstant(Map<String, Object> attributes, String name) {
+			Object value = attributes.get(name);
+			if (value == null) {
+				return null;
+			}
+			if (value instanceof Instant) {
+				return (Instant) value;
+			}
+			throw new IllegalArgumentException(name + " attribute must be of type Instant");
+		}
+	}
+
+	/**
+	 * @author Josh Cummings
+	 * @since 5.3
+	 */
+	public final static class OAuth2LoginRequestPostProcessor implements RequestPostProcessor {
+		private final String nameAttributeKey = "sub";
+
+		private ClientRegistration clientRegistration;
+		private OAuth2AccessToken accessToken;
+
+		private Supplier<Collection<GrantedAuthority>> authorities = this::defaultAuthorities;
+		private Supplier<Map<String, Object>> attributes = this::defaultAttributes;
+		private Supplier<OAuth2User> oauth2User = this::defaultPrincipal;
+
+		private OAuth2LoginRequestPostProcessor(OAuth2AccessToken accessToken) {
+			this.accessToken = accessToken;
+			this.clientRegistration = clientRegistrationBuilder().build();
+		}
+
+		/**
+		 * Use the provided authorities in the {@link Authentication}
+		 *
+		 * @param authorities the authorities to use
+		 * @return the {@link OAuth2LoginRequestPostProcessor} for further configuration
+		 */
+		public OAuth2LoginRequestPostProcessor authorities(Collection<GrantedAuthority> authorities) {
+			Assert.notNull(authorities, "authorities cannot be null");
+			this.authorities = () -> authorities;
+			this.oauth2User = this::defaultPrincipal;
+			return this;
+		}
+
+		/**
+		 * Use the provided authorities in the {@link Authentication}
+		 *
+		 * @param authorities the authorities to use
+		 * @return the {@link OAuth2LoginRequestPostProcessor} for further configuration
+		 */
+		public OAuth2LoginRequestPostProcessor authorities(GrantedAuthority... authorities) {
+			Assert.notNull(authorities, "authorities cannot be null");
+			this.authorities = () -> Arrays.asList(authorities);
+			this.oauth2User = this::defaultPrincipal;
+			return this;
+		}
+
+		/**
+		 * Mutate the attributes using the given {@link Consumer}
+		 *
+		 * @param attributesConsumer The {@link Consumer} for mutating the {@Map} of attributes
+		 * @return the {@link OAuth2LoginRequestPostProcessor} for further configuration
+		 */
+		public OAuth2LoginRequestPostProcessor attributes(Consumer<Map<String, Object>> attributesConsumer) {
+			Assert.notNull(attributesConsumer, "attributesConsumer cannot be null");
+			this.attributes = () -> {
+				Map<String, Object> attributes = defaultAttributes();
+				attributesConsumer.accept(attributes);
+				return attributes;
+			};
+			this.oauth2User = this::defaultPrincipal;
+			return this;
+		}
+
+		/**
+		 * Use the provided {@link OAuth2User} as the authenticated user.
+		 *
+		 * @param oauth2User the {@link OAuth2User} to use
+		 * @return the {@link OAuth2LoginRequestPostProcessor} for further configuration
+		 */
+		public OAuth2LoginRequestPostProcessor oauth2User(OAuth2User oauth2User) {
+			this.oauth2User = () -> oauth2User;
+			return this;
+		}
+
+		/**
+		 * Use the provided {@link ClientRegistration} as the client to authorize.
+		 *
+		 * The supplied {@link ClientRegistration} will be registered into an
+		 * {@link HttpSessionOAuth2AuthorizedClientRepository}. Tests relying on
+		 * {@link org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient}
+		 * annotations should register an {@link HttpSessionOAuth2AuthorizedClientRepository} bean
+		 * to the application context.
+		 *
+		 * @param clientRegistration the {@link ClientRegistration} to use
+		 * @return the {@link OAuth2LoginRequestPostProcessor} for further configuration
+		 */
+		public OAuth2LoginRequestPostProcessor clientRegistration(ClientRegistration clientRegistration) {
+			this.clientRegistration = clientRegistration;
+			return this;
+		}
+
+		@Override
+		public MockHttpServletRequest postProcessRequest(MockHttpServletRequest request) {
+			OAuth2User oauth2User = this.oauth2User.get();
+			OAuth2AuthenticationToken token = new OAuth2AuthenticationToken
+					(oauth2User, oauth2User.getAuthorities(), this.clientRegistration.getRegistrationId());
+
+			request = new AuthenticationRequestPostProcessor(token).postProcessRequest(request);
+			return new OAuth2ClientRequestPostProcessor()
+					.clientRegistration(this.clientRegistration)
+					.principalName(oauth2User.getName())
+					.accessToken(this.accessToken)
+					.postProcessRequest(request);
+		}
+
+		private ClientRegistration.Builder clientRegistrationBuilder() {
+			return ClientRegistration.withRegistrationId("test")
+					.authorizationGrantType(AuthorizationGrantType.PASSWORD)
+					.clientId("test-client")
+					.tokenUri("https://token-uri.example.org");
+		}
+
+		private Collection<GrantedAuthority> defaultAuthorities() {
+			Set<GrantedAuthority> authorities = new LinkedHashSet<>();
+			authorities.add(new OAuth2UserAuthority(this.attributes.get()));
+			for (String authority : this.accessToken.getScopes()) {
+				authorities.add(new SimpleGrantedAuthority("SCOPE_" + authority));
+			}
+			return authorities;
+		}
+
+		private Map<String, Object> defaultAttributes() {
+			Map<String, Object> attributes = new HashMap<>();
+			attributes.put(this.nameAttributeKey, "user");
+			return attributes;
+		}
+
+		private OAuth2User defaultPrincipal() {
+			return new DefaultOAuth2User(this.authorities.get(), this.attributes.get(), this.nameAttributeKey);
+		}
+	}
+
+	/**
+	 * @author Josh Cummings
+	 * @since 5.3
+	 */
+	public final static class OidcLoginRequestPostProcessor implements RequestPostProcessor {
+		private ClientRegistration clientRegistration;
+		private OAuth2AccessToken accessToken;
+		private OidcIdToken idToken;
+		private OidcUserInfo userInfo;
+		private Supplier<OidcUser> oidcUser = this::defaultPrincipal;
+		private Collection<GrantedAuthority> authorities;
+
+		private OidcLoginRequestPostProcessor(OAuth2AccessToken accessToken) {
+			this.accessToken = accessToken;
+			this.clientRegistration = clientRegistrationBuilder().build();
+		}
+
+		/**
+		 * Use the provided authorities in the {@link Authentication}
+		 *
+		 * @param authorities the authorities to use
+		 * @return the {@link OidcLoginRequestPostProcessor} for further configuration
+		 */
+		public OidcLoginRequestPostProcessor authorities(Collection<GrantedAuthority> authorities) {
+			Assert.notNull(authorities, "authorities cannot be null");
+			this.authorities = authorities;
+			this.oidcUser = this::defaultPrincipal;
+			return this;
+		}
+
+		/**
+		 * Use the provided authorities in the {@link Authentication}
+		 *
+		 * @param authorities the authorities to use
+		 * @return the {@link OidcLoginRequestPostProcessor} for further configuration
+		 */
+		public OidcLoginRequestPostProcessor authorities(GrantedAuthority... authorities) {
+			Assert.notNull(authorities, "authorities cannot be null");
+			this.authorities = Arrays.asList(authorities);
+			this.oidcUser = this::defaultPrincipal;
+			return this;
+		}
+
+		/**
+		 * Use the provided {@link OidcIdToken} when constructing the authenticated user
+		 *
+		 * @param idTokenBuilderConsumer a {@link Consumer} of a {@link OidcIdToken.Builder}
+		 * @return the {@link OidcLoginRequestPostProcessor} for further configuration
+		 */
+		public OidcLoginRequestPostProcessor idToken(Consumer<OidcIdToken.Builder> idTokenBuilderConsumer) {
+			OidcIdToken.Builder builder = OidcIdToken.withTokenValue("id-token");
+			builder.subject("user");
+			idTokenBuilderConsumer.accept(builder);
+			this.idToken = builder.build();
+			this.oidcUser = this::defaultPrincipal;
+			return this;
+		}
+
+		/**
+		 * Use the provided {@link OidcUserInfo} when constructing the authenticated user
+		 *
+		 * @param userInfoBuilderConsumer a {@link Consumer} of a {@link OidcUserInfo.Builder}
+		 * @return the {@link OidcLoginRequestPostProcessor} for further configuration
+		 */
+		public OidcLoginRequestPostProcessor userInfoToken(Consumer<OidcUserInfo.Builder> userInfoBuilderConsumer) {
+			OidcUserInfo.Builder builder = OidcUserInfo.builder();
+			userInfoBuilderConsumer.accept(builder);
+			this.userInfo = builder.build();
+			this.oidcUser = this::defaultPrincipal;
+			return this;
+		}
+
+		/**
+		 * Use the provided {@link OidcUser} as the authenticated user.
+		 *
+		 *
+		 * @param oidcUser the {@link OidcUser} to use
+		 * @return the {@link OidcLoginRequestPostProcessor} for further configuration
+		 */
+		public OidcLoginRequestPostProcessor oidcUser(OidcUser oidcUser) {
+			this.oidcUser = () -> oidcUser;
+			return this;
+		}
+
+		/**
+		 * Use the provided {@link ClientRegistration} as the client to authorize.
+		 *
+		 * The supplied {@link ClientRegistration} will be registered into an
+		 * {@link HttpSessionOAuth2AuthorizedClientRepository}. Tests relying on
+		 * {@link org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient}
+		 * annotations should register an {@link HttpSessionOAuth2AuthorizedClientRepository} bean
+		 * to the application context.
+		 *
+		 * @param clientRegistration the {@link ClientRegistration} to use
+		 * @return the {@link OidcLoginRequestPostProcessor} for further configuration
+		 */
+		public OidcLoginRequestPostProcessor clientRegistration(ClientRegistration clientRegistration) {
+			this.clientRegistration = clientRegistration;
+			return this;
+		}
+
+		@Override
+		public MockHttpServletRequest postProcessRequest(MockHttpServletRequest request) {
+			OidcUser oidcUser = this.oidcUser.get();
+			return new OAuth2LoginRequestPostProcessor(this.accessToken)
+					.oauth2User(oidcUser)
+					.clientRegistration(this.clientRegistration)
+					.postProcessRequest(request);
+		}
+
+		private ClientRegistration.Builder clientRegistrationBuilder() {
+			return ClientRegistration.withRegistrationId("test")
+					.authorizationGrantType(AuthorizationGrantType.PASSWORD)
+					.clientId("test-client")
+					.tokenUri("https://token-uri.example.org");
+		}
+
+		private Collection<GrantedAuthority> getAuthorities() {
+			if (this.authorities == null) {
+				Set<GrantedAuthority> authorities = new LinkedHashSet<>();
+				authorities.add(new OidcUserAuthority(getOidcIdToken(), getOidcUserInfo()));
+				for (String authority : this.accessToken.getScopes()) {
+					authorities.add(new SimpleGrantedAuthority("SCOPE_" + authority));
+				}
+				return authorities;
+			} else {
+				return this.authorities;
+			}
+		}
+
+		private OidcIdToken getOidcIdToken() {
+			if (this.idToken == null) {
+				return new OidcIdToken("id-token", null, null,
+						Collections.singletonMap(IdTokenClaimNames.SUB, "user"));
+			} else {
+				return this.idToken;
+			}
+		}
+
+		private OidcUserInfo getOidcUserInfo() {
+			return this.userInfo;
+		}
+
+		private OidcUser defaultPrincipal() {
+			return new DefaultOidcUser(getAuthorities(), getOidcIdToken(), this.userInfo);
+		}
+	}
+
+	/**
+	 * @author Josh Cummings
+	 * @since 5.3
+	 */
+	public final static class OAuth2ClientRequestPostProcessor implements RequestPostProcessor {
+		private String registrationId = "test";
+		private ClientRegistration clientRegistration;
+		private String principalName = "user";
+		private OAuth2AccessToken accessToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER,
+				"access-token", null, null, Collections.singleton("read"));
+
+		private OAuth2ClientRequestPostProcessor() {
+		}
+
+		private OAuth2ClientRequestPostProcessor(String registrationId) {
+			this.registrationId = registrationId;
+			clientRegistration(c -> {});
+		}
+
+		/**
+		 * Use this {@link ClientRegistration}
+		 *
+		 * @param clientRegistration
+		 * @return the {@link OAuth2ClientRequestPostProcessor} for further configuration
+		 */
+		public OAuth2ClientRequestPostProcessor clientRegistration(ClientRegistration clientRegistration) {
+			this.clientRegistration = clientRegistration;
+			return this;
+		}
+
+		/**
+		 * Use this {@link Consumer} to configure a {@link ClientRegistration}
+		 *
+		 * @param clientRegistrationConfigurer the {@link ClientRegistration} configurer
+		 * @return the {@link OAuth2ClientRequestPostProcessor} for further configuration
+		 */
+		public OAuth2ClientRequestPostProcessor clientRegistration
+				(Consumer<ClientRegistration.Builder> clientRegistrationConfigurer) {
+
+			ClientRegistration.Builder builder = clientRegistrationBuilder();
+			clientRegistrationConfigurer.accept(builder);
+			this.clientRegistration = builder.build();
+			return this;
+		}
+
+		/**
+		 * Use this as the resource owner's principal name
+		 *
+		 * @param principalName the resource owner's principal name
+		 * @return the {@link OAuth2ClientRequestPostProcessor} for further configuration
+		 */
+		public OAuth2ClientRequestPostProcessor principalName(String principalName) {
+			Assert.notNull(principalName, "principalName cannot be null");
+			this.principalName = principalName;
+			return this;
+		}
+
+		/**
+		 * Use this {@link OAuth2AccessToken}
+		 *
+		 * @param accessToken the {@link OAuth2AccessToken} to use
+		 * @return the {@link OAuth2ClientRequestPostProcessor} for further configuration
+		 */
+		public OAuth2ClientRequestPostProcessor accessToken(OAuth2AccessToken accessToken) {
+			this.accessToken = accessToken;
+			return this;
+		}
+
+		@Override
+		public MockHttpServletRequest postProcessRequest(MockHttpServletRequest request) {
+			if (this.clientRegistration == null) {
+				throw new IllegalArgumentException("Please specify a ClientRegistration via one " +
+						"of the clientRegistration methods");
+			}
+			OAuth2AuthorizedClient client = new OAuth2AuthorizedClient
+					(this.clientRegistration, this.principalName, this.accessToken);
+
+			OAuth2AuthorizedClientManager authorizationClientManager = OAuth2ClientServletTestUtils
+					.getOAuth2AuthorizedClientManager(request);
+			if (!(authorizationClientManager instanceof TestOAuth2AuthorizedClientManager)) {
+				authorizationClientManager =
+						new TestOAuth2AuthorizedClientManager(authorizationClientManager);
+				OAuth2ClientServletTestUtils.setOAuth2AuthorizedClientManager(request, authorizationClientManager);
+			}
+			TestOAuth2AuthorizedClientManager.enable(request);
+			request.setAttribute(TestOAuth2AuthorizedClientManager.TOKEN_ATTR_NAME, client);
+			return request;
+		}
+
+		private ClientRegistration.Builder clientRegistrationBuilder() {
+			return ClientRegistration.withRegistrationId(this.registrationId)
+					.authorizationGrantType(AuthorizationGrantType.PASSWORD)
+					.clientId("test-client")
+					.clientSecret("test-secret")
+					.tokenUri("https://idp.example.org/oauth/token");
+		}
+
+		/**
+		 * Used to wrap the {@link OAuth2AuthorizedClientManager} to provide support for testing when the
+		 * request is wrapped
+		 */
+		private static class TestOAuth2AuthorizedClientManager
+				implements OAuth2AuthorizedClientManager {
+
+			final static String TOKEN_ATTR_NAME = TestOAuth2AuthorizedClientManager.class.getName()
+					.concat(".TOKEN");
+
+			final static String ENABLED_ATTR_NAME = TestOAuth2AuthorizedClientManager.class
+					.getName().concat(".ENABLED");
+
+			private final OAuth2AuthorizedClientManager delegate;
+
+			private TestOAuth2AuthorizedClientManager(OAuth2AuthorizedClientManager delegate) {
+				this.delegate = delegate;
+			}
+
+			@Override
+			public OAuth2AuthorizedClient authorize(OAuth2AuthorizeRequest authorizeRequest) {
+				HttpServletRequest request =
+						authorizeRequest.getAttribute(HttpServletRequest.class.getName());
+				if (isEnabled(request)) {
+					return (OAuth2AuthorizedClient) request.getAttribute(TOKEN_ATTR_NAME);
+				} else {
+					return this.delegate.authorize(authorizeRequest);
+				}
+			}
+
+			public static void enable(HttpServletRequest request) {
+				request.setAttribute(ENABLED_ATTR_NAME, TRUE);
+			}
+
+			public boolean isEnabled(HttpServletRequest request) {
+				return TRUE.equals(request.getAttribute(ENABLED_ATTR_NAME));
+			}
+		}
+
+		private static class OAuth2ClientServletTestUtils {
+			private static final OAuth2AuthorizedClientRepository DEFAULT_CLIENT_REPO =
+					new HttpSessionOAuth2AuthorizedClientRepository();
+
+			/**
+			 * Gets the {@link OAuth2AuthorizedClientManager} for the specified {@link HttpServletRequest}.
+			 * If one is not found, one based off of {@link HttpSessionOAuth2AuthorizedClientRepository} is used.
+			 *
+			 * @param request the {@link HttpServletRequest} to obtain the
+			 * {@link OAuth2AuthorizedClientManager}
+			 * @return the {@link OAuth2AuthorizedClientManager} for the specified
+			 * {@link HttpServletRequest}
+			 */
+			public static OAuth2AuthorizedClientManager getOAuth2AuthorizedClientManager(HttpServletRequest request) {
+				OAuth2AuthorizedClientArgumentResolver resolver =
+						findResolver(request, OAuth2AuthorizedClientArgumentResolver.class);
+				if (resolver == null) {
+					return authorizeRequest -> DEFAULT_CLIENT_REPO.loadAuthorizedClient
+							(authorizeRequest.getClientRegistrationId(), authorizeRequest.getPrincipal(), request);
+				}
+				return (OAuth2AuthorizedClientManager)
+						ReflectionTestUtils.getField(resolver, "authorizedClientManager");
+			}
+
+			/**
+			 * Sets the {@link OAuth2AuthorizedClientManager} for the specified {@link HttpServletRequest}.
+			 *
+			 * @param request the {@link HttpServletRequest} to obtain the
+			 * {@link OAuth2AuthorizedClientManager}
+			 * @param manager the {@link OAuth2AuthorizedClientManager} to set
+			 */
+			public static void setOAuth2AuthorizedClientManager(HttpServletRequest request,
+					OAuth2AuthorizedClientManager manager) {
+				OAuth2AuthorizedClientArgumentResolver resolver =
+						findResolver(request, OAuth2AuthorizedClientArgumentResolver.class);
+				if (resolver == null) {
+					return;
+				}
+				ReflectionTestUtils.setField(resolver, "authorizedClientManager", manager);
+			}
+
+			@SuppressWarnings("unchecked")
+			static <T extends HandlerMethodArgumentResolver> T findResolver(HttpServletRequest request,
+					Class<T> resolverClass) {
+				if (!ClassUtils.isPresent
+						("org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter", null)) {
+					return null;
+				}
+				return WebMvcClasspathGuard.findResolver(request, resolverClass);
+			}
+
+			private static class WebMvcClasspathGuard {
+				static <T extends HandlerMethodArgumentResolver> T findResolver(HttpServletRequest request,
+						Class<T> resolverClass) {
+					ServletContext servletContext = request.getServletContext();
+					RequestMappingHandlerAdapter mapping = getRequestMappingHandlerAdapter(servletContext);
+					if (mapping == null) {
+						return null;
+					}
+					List<HandlerMethodArgumentResolver> resolvers = mapping.getCustomArgumentResolvers();
+					if (resolvers == null) {
+						return null;
+					}
+					for (HandlerMethodArgumentResolver resolver : resolvers) {
+						if (resolverClass.isAssignableFrom(resolver.getClass())) {
+							return (T) resolver;
+						}
+					}
+					return null;
+				}
+
+				private static RequestMappingHandlerAdapter getRequestMappingHandlerAdapter(ServletContext servletContext) {
+					WebApplicationContext context = WebApplicationContextUtils
+							.getWebApplicationContext(servletContext);
+					if (context != null) {
+						String[] names = context.getBeanNamesForType(RequestMappingHandlerAdapter.class);
+						if (names.length > 0) {
+							return (RequestMappingHandlerAdapter) context.getBean(names[0]);
+						}
+					}
+					return null;
+				}
+			}
+
+			private OAuth2ClientServletTestUtils() {
+			}
 		}
 	}
 

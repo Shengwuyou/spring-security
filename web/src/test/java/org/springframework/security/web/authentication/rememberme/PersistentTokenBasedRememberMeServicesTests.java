@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -124,7 +124,7 @@ public class PersistentTokenBasedRememberMeServicesTests {
 	}
 
 	@Test
-	public void logoutClearsUsersTokenAndCookie() throws Exception {
+	public void logoutClearsUsersTokenAndCookie() {
 		Cookie cookie = new Cookie("mycookiename", "somevalue");
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.setCookies(cookie);
@@ -135,7 +135,7 @@ public class PersistentTokenBasedRememberMeServicesTests {
 				"somepass", "SOME_AUTH"));
 		Cookie returnedCookie = response.getCookie("mycookiename");
 		assertThat(returnedCookie).isNotNull();
-		assertThat(returnedCookie.getMaxAge()).isEqualTo(0);
+		assertThat(returnedCookie.getMaxAge()).isZero();
 
 		// SEC-1280
 		services.logout(request, response, null);

@@ -1,11 +1,11 @@
 /*
- * Copyright 2004, 2005, 2006 Acegi Technology Pty Limited
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.security.authentication;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,6 +30,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.CredentialsContainer;
 import org.springframework.security.core.SpringSecurityMessageSource;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Iterates an {@link Authentication} request through a list of
@@ -101,10 +102,30 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 	private AuthenticationManager parent;
 	private boolean eraseCredentialsAfterAuthentication = true;
 
+	/**
+	 * Construct a {@link ProviderManager} using the given {@link AuthenticationProvider}s
+	 *
+	 * @param providers the {@link AuthenticationProvider}s to use
+	 */
+	public ProviderManager(AuthenticationProvider... providers) {
+		this(Arrays.asList(providers), null);
+	}
+
+	/**
+	 * Construct a {@link ProviderManager} using the given {@link AuthenticationProvider}s
+	 *
+	 * @param providers the {@link AuthenticationProvider}s to use
+	 */
 	public ProviderManager(List<AuthenticationProvider> providers) {
 		this(providers, null);
 	}
 
+	/**
+	 * Construct a {@link ProviderManager} using the provided parameters
+	 *
+	 * @param providers the {@link AuthenticationProvider}s to use
+	 * @param parent a parent {@link AuthenticationManager} to fall back to
+	 */
 	public ProviderManager(List<AuthenticationProvider> providers,
 			AuthenticationManager parent) {
 		Assert.notNull(providers, "providers list cannot be null");
@@ -116,7 +137,7 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 	// ~ Methods
 	// ========================================================================================================
 
-	public void afterPropertiesSet() throws Exception {
+	public void afterPropertiesSet() {
 		checkState();
 	}
 
@@ -125,6 +146,9 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 			throw new IllegalArgumentException(
 					"A parent AuthenticationManager or a list "
 							+ "of AuthenticationProviders is required");
+		} else if (CollectionUtils.contains(providers.iterator(), null)) {
+			throw new IllegalArgumentException(
+					"providers list cannot contain null values");
 		}
 	}
 
@@ -157,7 +181,9 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 			throws AuthenticationException {
 		Class<? extends Authentication> toTest = authentication.getClass();
 		AuthenticationException lastException = null;
+		AuthenticationException parentException = null;
 		Authentication result = null;
+		Authentication parentResult = null;
 		boolean debug = logger.isDebugEnabled();
 
 		for (AuthenticationProvider provider : getProviders()) {
@@ -178,17 +204,12 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 					break;
 				}
 			}
-			catch (AccountStatusException e) {
+			catch (AccountStatusException | InternalAuthenticationServiceException e) {
 				prepareException(e, authentication);
 				// SEC-546: Avoid polling additional providers if auth failure is due to
 				// invalid account status
 				throw e;
-			}
-			catch (InternalAuthenticationServiceException e) {
-				prepareException(e, authentication);
-				throw e;
-			}
-			catch (AuthenticationException e) {
+			} catch (AuthenticationException e) {
 				lastException = e;
 			}
 		}
@@ -196,7 +217,7 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 		if (result == null && parent != null) {
 			// Allow the parent to try.
 			try {
-				result = parent.authenticate(authentication);
+				result = parentResult = parent.authenticate(authentication);
 			}
 			catch (ProviderNotFoundException e) {
 				// ignore as we will throw below if no other exception occurred prior to
@@ -205,7 +226,7 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 				// handled the request
 			}
 			catch (AuthenticationException e) {
-				lastException = e;
+				lastException = parentException = e;
 			}
 		}
 
@@ -217,7 +238,11 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 				((CredentialsContainer) result).eraseCredentials();
 			}
 
-			eventPublisher.publishAuthenticationSuccess(result);
+			// If the parent AuthenticationManager was attempted and successful then it will publish an AuthenticationSuccessEvent
+			// This check prevents a duplicate AuthenticationSuccessEvent if the parent AuthenticationManager already published it
+			if (parentResult == null) {
+				eventPublisher.publishAuthenticationSuccess(result);
+			}
 			return result;
 		}
 
@@ -230,7 +255,11 @@ public class ProviderManager implements AuthenticationManager, MessageSourceAwar
 					"No AuthenticationProvider found for {0}"));
 		}
 
-		prepareException(lastException, authentication);
+		// If the parent AuthenticationManager was attempted and failed then it will publish an AbstractAuthenticationFailureEvent
+		// This check prevents a duplicate AbstractAuthenticationFailureEvent if the parent AuthenticationManager already published it
+		if (parentException == null) {
+			prepareException(lastException, authentication);
+		}
 
 		throw lastException;
 	}

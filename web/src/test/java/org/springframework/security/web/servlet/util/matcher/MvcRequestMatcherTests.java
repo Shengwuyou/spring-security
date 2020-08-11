@@ -1,11 +1,11 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -34,12 +34,13 @@ import org.springframework.web.servlet.handler.MatchableHandlerMapping;
 import org.springframework.web.servlet.handler.RequestMatchResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 /**
  * @author Rob Winch
+ * @author Eddú Meléndez
  */
 @RunWith(MockitoJUnitRunner.class)
 public class MvcRequestMatcherTests {
@@ -56,7 +57,7 @@ public class MvcRequestMatcherTests {
 	MvcRequestMatcher matcher;
 
 	@Before
-	public void setup() throws Exception {
+	public void setup() {
 		this.request = new MockHttpServletRequest();
 		this.request.setMethod("GET");
 		this.request.setServletPath("/path");
@@ -65,17 +66,12 @@ public class MvcRequestMatcherTests {
 
 	@Test
 	public void extractUriTemplateVariablesSuccess() throws Exception {
-		when(this.result.extractUriTemplateVariables())
-				.thenReturn(Collections.singletonMap("p", "path"));
-		when(this.introspector.getMatchableHandlerMapping(this.request))
-				.thenReturn(this.mapping);
-		when(this.mapping.match(eq(this.request), this.pattern.capture()))
-				.thenReturn(this.result);
-
 		this.matcher = new MvcRequestMatcher(this.introspector, "/{p}");
 		when(this.introspector.getMatchableHandlerMapping(this.request)).thenReturn(null);
 
 		assertThat(this.matcher.extractUriTemplateVariables(this.request))
+				.containsEntry("p", "path");
+		assertThat(this.matcher.matcher(this.request).getVariables())
 				.containsEntry("p", "path");
 	}
 
@@ -89,6 +85,7 @@ public class MvcRequestMatcherTests {
 				.thenReturn(this.result);
 
 		assertThat(this.matcher.extractUriTemplateVariables(this.request)).isEmpty();
+		assertThat(this.matcher.matcher(this.request).getVariables()).isEmpty();
 	}
 
 	@Test
@@ -98,6 +95,8 @@ public class MvcRequestMatcherTests {
 
 		assertThat(this.matcher.extractUriTemplateVariables(this.request))
 				.containsEntry("p", "path");
+		assertThat(this.matcher.matcher(this.request).getVariables())
+				.containsEntry("p", "path");
 	}
 
 	@Test
@@ -106,6 +105,7 @@ public class MvcRequestMatcherTests {
 		when(this.introspector.getMatchableHandlerMapping(this.request)).thenReturn(null);
 
 		assertThat(this.matcher.extractUriTemplateVariables(this.request)).isEmpty();
+		assertThat(this.matcher.matcher(this.request).getVariables()).isEmpty();
 	}
 
 	@Test
@@ -122,11 +122,7 @@ public class MvcRequestMatcherTests {
 	}
 
 	@Test
-	public void matchesServletPathFalse() throws Exception {
-		when(this.introspector.getMatchableHandlerMapping(this.request))
-				.thenReturn(this.mapping);
-		when(this.mapping.match(eq(this.request), this.pattern.capture()))
-				.thenReturn(this.result);
+	public void matchesServletPathFalse() {
 		this.matcher.setServletPath("/spring");
 		this.request.setServletPath("/");
 
@@ -180,7 +176,7 @@ public class MvcRequestMatcherTests {
 	}
 
 	@Test
-	public void matchesMethodAndPathFalseMethod() throws Exception {
+	public void matchesMethodAndPathFalseMethod() {
 		this.matcher.setMethod(HttpMethod.POST);
 
 		assertThat(this.matcher.matches(this.request)).isFalse();
@@ -192,10 +188,9 @@ public class MvcRequestMatcherTests {
 	 * Malicious users can specify any HTTP Method to create a stacktrace and try to
 	 * expose useful information about the system. We should ensure we ignore invalid HTTP
 	 * methods.
-	 * @throws Exception if an error occurs
 	 */
 	@Test
-	public void matchesInvalidMethodOnRequest() throws Exception {
+	public void matchesInvalidMethodOnRequest() {
 		this.matcher.setMethod(HttpMethod.GET);
 		this.request.setMethod("invalid");
 
@@ -214,7 +209,7 @@ public class MvcRequestMatcherTests {
 	}
 
 	@Test
-	public void matchesGetMatchableHandlerMappingNull() throws Exception {
+	public void matchesGetMatchableHandlerMappingNull() {
 		assertThat(this.matcher.matches(this.request)).isTrue();
 	}
 
@@ -223,5 +218,32 @@ public class MvcRequestMatcherTests {
 		when(this.introspector.getMatchableHandlerMapping(this.request)).thenThrow(
 				new HttpRequestMethodNotSupportedException(this.request.getMethod()));
 		assertThat(this.matcher.matches(this.request)).isTrue();
+	}
+
+	@Test
+	public void toStringWhenAll() {
+		this.matcher.setMethod(HttpMethod.GET);
+		this.matcher.setServletPath("/spring");
+
+		assertThat(this.matcher.toString()).isEqualTo("Mvc [pattern='/path', servletPath='/spring', GET]");
+	}
+
+	@Test
+	public void toStringWhenHttpMethod() {
+		this.matcher.setMethod(HttpMethod.GET);
+
+		assertThat(this.matcher.toString()).isEqualTo("Mvc [pattern='/path', GET]");
+	}
+
+	@Test
+	public void toStringWhenServletPath() {
+		this.matcher.setServletPath("/spring");
+
+		assertThat(this.matcher.toString()).isEqualTo("Mvc [pattern='/path', servletPath='/spring']");
+	}
+
+	@Test
+	public void toStringWhenOnlyPattern() {
+		assertThat(this.matcher.toString()).isEqualTo("Mvc [pattern='/path']");
 	}
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,8 +17,8 @@ package org.springframework.security.taglibs.authz;
 
 import static org.assertj.core.api.Assertions.*;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,7 +38,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockServletContext;
 import org.springframework.security.access.expression.SecurityExpressionHandler;
 import org.springframework.security.authentication.TestingAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.access.WebInvocationPrivilegeEvaluator;
@@ -79,7 +78,7 @@ public class AbstractAuthorizeTagTests {
 
 		tag.authorizeUsingUrlCheck();
 
-		verify(expected).isAllowed(eq(""), eq(uri), eq("GET"), any(Authentication.class));
+		verify(expected).isAllowed(eq(""), eq(uri), eq("GET"), any());
 	}
 
 	@Test
@@ -93,17 +92,17 @@ public class AbstractAuthorizeTagTests {
 
 		tag.authorizeUsingUrlCheck();
 
-		verify(expected).isAllowed(eq(""), eq(uri), eq("GET"), any(Authentication.class));
+		verify(expected).isAllowed(eq(""), eq(uri), eq("GET"), any());
 	}
 
 	@Test
 	@SuppressWarnings("rawtypes")
 	public void expressionFromChildContext() throws IOException {
-		SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("user", "pass","USER"));
+		SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("user", "pass", "USER"));
 		DefaultWebSecurityExpressionHandler expected = new DefaultWebSecurityExpressionHandler();
 		tag.setAccess("permitAll");
 		WebApplicationContext wac = mock(WebApplicationContext.class);
-		when(wac.getBeansOfType(SecurityExpressionHandler.class)).thenReturn(Collections.<String,SecurityExpressionHandler>singletonMap("wipe", expected));
+		when(wac.getBeansOfType(SecurityExpressionHandler.class)).thenReturn(Collections.<String, SecurityExpressionHandler>singletonMap("wipe", expected));
 		servletContext.setAttribute("org.springframework.web.servlet.FrameworkServlet.CONTEXT.dispatcher", wac);
 
 		assertThat(tag.authorize()).isTrue();

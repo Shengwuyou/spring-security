@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -60,7 +60,7 @@ public class ChannelDecisionManagerImpl implements ChannelDecisionManager,
 	// ~ Methods
 	// ========================================================================================================
 
-	public void afterPropertiesSet() throws Exception {
+	public void afterPropertiesSet() {
 		Assert.notEmpty(channelProcessors, "A list of ChannelProcessors is required");
 	}
 
@@ -88,11 +88,11 @@ public class ChannelDecisionManagerImpl implements ChannelDecisionManager,
 	@SuppressWarnings("cast")
 	public void setChannelProcessors(List<?> newList) {
 		Assert.notEmpty(newList, "A list of ChannelProcessors is required");
-		channelProcessors = new ArrayList<ChannelProcessor>(newList.size());
+		channelProcessors = new ArrayList<>(newList.size());
 
 		for (Object currentObject : newList) {
 			Assert.isInstanceOf(ChannelProcessor.class, currentObject,
-					"ChannelProcessor " + currentObject.getClass().getName()
+					() -> "ChannelProcessor " + currentObject.getClass().getName()
 							+ " must implement ChannelProcessor");
 			channelProcessors.add((ChannelProcessor) currentObject);
 		}

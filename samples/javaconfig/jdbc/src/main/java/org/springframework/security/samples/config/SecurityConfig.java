@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
 
 @EnableWebSecurity
 public class SecurityConfig {
@@ -33,7 +34,7 @@ public class SecurityConfig {
 			.jdbcAuthentication()
 				.dataSource(dataSource)
 				.withDefaultSchema()
-				.withUser("user").password("password").roles("USER");
+				.withUser(User.withDefaultPasswordEncoder().username("user").password("password").roles("USER"));
 	}
 	// @formatter:on
 }

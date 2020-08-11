@@ -9,7 +9,7 @@
 	except in compliance with the License.  You may obtain a
 	copy of the License at the following location:
 
-	  http://www.apache.org/licenses/LICENSE-2.0
+	  https://www.apache.org/licenses/LICENSE-2.0
 
 	Unless required by applicable law or agreed to in writing,
 	software distributed under the License is distributed on an
@@ -37,13 +37,9 @@
 	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	   xmlns:p="http://www.springframework.org/schema/p"
 	   xmlns:c="http://www.springframework.org/schema/c"
-	   xmlns:tx="http://www.springframework.org/schema/tx"
 	   xmlns:util="http://www.springframework.org/schema/util"
-	   xmlns:sec="http://www.springframework.org/schema/security"
-	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
-	   http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
-	   http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.2.xsd
-	   http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+	   http://www.springframework.org/schema/util https://www.springframework.org/schema/util/spring-util.xsd">
 
 	<!--
 	   | The authentication manager defines security policy for authentication by specifying at a minimum

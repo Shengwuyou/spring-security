@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -55,7 +55,7 @@ public class PreAuthenticatedGrantedAuthoritiesWebAuthenticationDetailsTests {
 
 	private HttpServletRequest getRequest(final String userName, final String[] aRoles) {
 		MockHttpServletRequest req = new MockHttpServletRequest() {
-			private Set<String> roles = new HashSet<String>(Arrays.asList(aRoles));
+			private Set<String> roles = new HashSet<>(Arrays.asList(aRoles));
 
 			public boolean isUserInRole(String arg0) {
 				return roles.contains(arg0);

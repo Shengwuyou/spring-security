@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,12 +36,12 @@ import org.springframework.security.crypto.keygen.BytesKeyGenerator;
 import org.springframework.security.crypto.keygen.KeyGenerators;
 
 /**
- * Encryptor that uses 256-bit AES encryption.
+ * Encryptor that uses AES encryption.
  *
  * @author Keith Donald
  * @author Dave Syer
  */
-final class AesBytesEncryptor implements BytesEncryptor {
+public final class AesBytesEncryptor implements BytesEncryptor {
 
 	private final SecretKey secretKey;
 
@@ -65,7 +65,7 @@ final class AesBytesEncryptor implements BytesEncryptor {
 		private BytesKeyGenerator ivGenerator;
 		private String name;
 
-		private CipherAlgorithm(String name, BytesKeyGenerator ivGenerator) {
+		CipherAlgorithm(String name, BytesKeyGenerator ivGenerator) {
 			this.name = name;
 			this.ivGenerator = ivGenerator;
 		}
@@ -99,9 +99,19 @@ final class AesBytesEncryptor implements BytesEncryptor {
 
 	public AesBytesEncryptor(String password, CharSequence salt,
 			BytesKeyGenerator ivGenerator, CipherAlgorithm alg) {
-		PBEKeySpec keySpec = new PBEKeySpec(password.toCharArray(), Hex.decode(salt),
-				1024, 256);
-		SecretKey secretKey = newSecretKey("PBKDF2WithHmacSHA1", keySpec);
+		this(newSecretKey("PBKDF2WithHmacSHA1", new PBEKeySpec(password.toCharArray(), Hex.decode(salt),
+				1024, 256)), ivGenerator, alg);
+	}
+
+	/**
+	 * Constructs an encryptor that uses AES encryption.
+	 *
+	 * @param secretKey the secret (symmetric) key
+	 * @param ivGenerator the generator used to generate the initialization vector. If null,
+	 * then a default algorithm will be used based on the provided {@link CipherAlgorithm}
+	 * @param alg the {@link CipherAlgorithm} to be used
+	 */
+	public AesBytesEncryptor(SecretKey secretKey, BytesKeyGenerator ivGenerator, CipherAlgorithm alg) {
 		this.secretKey = new SecretKeySpec(secretKey.getEncoded(), "AES");
 		this.alg = alg;
 		this.encryptor = alg.createCipher();

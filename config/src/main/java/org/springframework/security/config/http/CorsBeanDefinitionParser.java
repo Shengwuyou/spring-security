@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,17 +15,16 @@
  */
 package org.springframework.security.config.http;
 
-import org.w3c.dom.Element;
-
 import org.springframework.beans.BeanMetadataElement;
 import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.CorsFilter;
+import org.w3c.dom.Element;
 
 /**
  * Parser for the {@code CorsFilter}.
@@ -40,17 +39,17 @@ public class CorsBeanDefinitionParser {
 	private static final String ATT_REF = "ref";
 
 	public BeanMetadataElement parse(Element element, ParserContext parserContext) {
-		if(element == null) {
+		if (element == null) {
 			return null;
 		}
 
 		String filterRef = element.getAttribute(ATT_REF);
-		if(StringUtils.hasText(filterRef)) {
+		if (StringUtils.hasText(filterRef)) {
 			return new RuntimeBeanReference(filterRef);
 		}
 
 		BeanMetadataElement configurationSource = getSource(element, parserContext);
-		if(configurationSource == null) {
+		if (configurationSource == null) {
 			throw new BeanCreationException("Could not create CorsFilter");
 		}
 
@@ -67,12 +66,10 @@ public class CorsBeanDefinitionParser {
 
 		boolean mvcPresent = ClassUtils.isPresent(HANDLER_MAPPING_INTROSPECTOR,
 				getClass().getClassLoader());
-		if(!mvcPresent) {
+		if (!mvcPresent) {
 			return null;
 		}
 
-		BeanDefinitionBuilder configurationSourceBldr = BeanDefinitionBuilder.rootBeanDefinition(HANDLER_MAPPING_INTROSPECTOR);
-		configurationSourceBldr.setAutowireMode(AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR);
-		return configurationSourceBldr.getBeanDefinition();
+		return new RootBeanDefinition(HandlerMappingIntrospectorFactoryBean.class);
 	}
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,7 +34,7 @@ import org.springframework.security.web.PortMapperImpl;
 public final class PortMapperConfigurer<H extends HttpSecurityBuilder<H>> extends
 		AbstractHttpConfigurer<PortMapperConfigurer<H>, H> {
 	private PortMapper portMapper;
-	private Map<String, String> httpsPortMappings = new HashMap<String, String>();
+	private Map<String, String> httpsPortMappings = new HashMap<>();
 
 	/**
 	 * Creates a new instance
@@ -45,7 +45,7 @@ public final class PortMapperConfigurer<H extends HttpSecurityBuilder<H>> extend
 	/**
 	 * Allows specifying the {@link PortMapper} instance.
 	 * @param portMapper
-	 * @return
+	 * @return the {@link PortMapperConfigurer} for further customizations
 	 */
 	public PortMapperConfigurer<H> portMapper(PortMapper portMapper) {
 		this.portMapper = portMapper;
@@ -62,7 +62,7 @@ public final class PortMapperConfigurer<H extends HttpSecurityBuilder<H>> extend
 	}
 
 	@Override
-	public void init(H http) throws Exception {
+	public void init(H http) {
 		http.setSharedObject(PortMapper.class, getPortMapper());
 	}
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -113,7 +113,7 @@ public class GlobalMethodSecurityBeanDefinitionParser implements BeanDefinitionP
 
 		Object source = pc.extractSource(element);
 		// The list of method metadata delegates
-		ManagedList<BeanMetadataElement> delegates = new ManagedList<BeanMetadataElement>();
+		ManagedList<BeanMetadataElement> delegates = new ManagedList<>();
 
 		boolean jsr250Enabled = "enabled".equals(element.getAttribute(ATT_USE_JSR250));
 		boolean useSecured = "enabled".equals(element.getAttribute(ATT_USE_SECURED));
@@ -122,7 +122,7 @@ public class GlobalMethodSecurityBeanDefinitionParser implements BeanDefinitionP
 		boolean useAspectJ = "aspectj".equals(element.getAttribute(ATT_MODE));
 
 		BeanDefinition preInvocationVoter = null;
-		ManagedList<BeanMetadataElement> afterInvocationProviders = new ManagedList<BeanMetadataElement>();
+		ManagedList<BeanMetadataElement> afterInvocationProviders = new ManagedList<>();
 
 		// Check for an external SecurityMetadataSource, which takes priority over other
 		// sources
@@ -208,7 +208,7 @@ public class GlobalMethodSecurityBeanDefinitionParser implements BeanDefinitionP
 					pc.registerBeanComponent(new BeanComponentDefinition(
 							expressionHandler, expressionHandlerRef));
 					logger.info("Expressions were enabled for method security but no SecurityExpressionHandler was configured. "
-							+ "All hasPermision() expressions will evaluate to false.");
+							+ "All hasPermission() expressions will evaluate to false.");
 				}
 
 				BeanDefinitionBuilder expressionPreAdviceBldr = BeanDefinitionBuilder
@@ -381,7 +381,7 @@ public class GlobalMethodSecurityBeanDefinitionParser implements BeanDefinitionP
 
 	private Map<String, List<ConfigAttribute>> parseProtectPointcuts(
 			ParserContext parserContext, List<Element> protectPointcutElts) {
-		Map<String, List<ConfigAttribute>> pointcutMap = new LinkedHashMap<String, List<ConfigAttribute>>();
+		Map<String, List<ConfigAttribute>> pointcutMap = new LinkedHashMap<>();
 
 		for (Element childElt : protectPointcutElts) {
 			String accessConfig = childElt.getAttribute(ATT_ACCESS);
@@ -399,7 +399,7 @@ public class GlobalMethodSecurityBeanDefinitionParser implements BeanDefinitionP
 
 			String[] attributeTokens = StringUtils
 					.commaDelimitedListToStringArray(accessConfig);
-			List<ConfigAttribute> attributes = new ArrayList<ConfigAttribute>(
+			List<ConfigAttribute> attributes = new ArrayList<>(
 					attributeTokens.length);
 
 			for (String token : attributeTokens) {
@@ -512,7 +512,7 @@ public class GlobalMethodSecurityBeanDefinitionParser implements BeanDefinitionP
 			synchronized (delegateMonitor) {
 				if (delegate == null) {
 					Assert.state(beanFactory != null,
-							"BeanFactory must be set to resolve " + authMgrBean);
+							() -> "BeanFactory must be set to resolve " + authMgrBean);
 					try {
 						delegate = beanFactory.getBean(authMgrBean,
 								AuthenticationManager.class);
@@ -561,7 +561,7 @@ public class GlobalMethodSecurityBeanDefinitionParser implements BeanDefinitionP
 		public final void setApplicationContext(ApplicationContext applicationContext)
 				throws BeansException {
 			String[] grantedAuthorityDefaultsBeanNames = applicationContext.getBeanNamesForType(GrantedAuthorityDefaults.class);
-			if(grantedAuthorityDefaultsBeanNames.length == 1) {
+			if (grantedAuthorityDefaultsBeanNames.length == 1) {
 				GrantedAuthorityDefaults grantedAuthorityDefaults = applicationContext.getBean(grantedAuthorityDefaultsBeanNames[0], GrantedAuthorityDefaults.class);
 				this.rolePrefix = grantedAuthorityDefaults.getRolePrefix();
 			}

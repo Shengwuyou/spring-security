@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@ package org.springframework.security.access.expression;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.security.access.PermissionEvaluator;
@@ -158,7 +157,6 @@ public abstract class SecurityExpressionRoot implements SecurityExpressionOperat
 
 	private Set<String> getAuthoritySet() {
 		if (roles == null) {
-			roles = new HashSet<String>();
 			Collection<? extends GrantedAuthority> userAuthorities = authentication
 					.getAuthorities();
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,8 +37,7 @@ public enum MatcherType {
 	ant(AntPathRequestMatcher.class), regex(RegexRequestMatcher.class), ciRegex(
 			RegexRequestMatcher.class), mvc(MvcRequestMatcher.class);
 
-	private static final String HANDLER_MAPPING_INTROSPECTOR_BEAN_NAME = "org.springframework.web.servlet.handler.HandlerMappingIntrospector";
-	private static final String HANDLER_MAPPING_INTROSPECTOR_FACTORY_BEAN_NAME = "org.springframework.security.config.http.HandlerMappingIntrospectorFactoryBean";
+	private static final String HANDLER_MAPPING_INTROSPECTOR_BEAN_NAME = "mvcHandlerMappingIntrospector";
 
 	private static final String ATT_MATCHER_TYPE = "request-matcher";
 
@@ -61,18 +60,7 @@ public enum MatcherType {
 				.rootBeanDefinition(type);
 
 		if (this == mvc) {
-			if (!pc.getRegistry().isBeanNameInUse(HANDLER_MAPPING_INTROSPECTOR_BEAN_NAME)) {
-				BeanDefinitionBuilder hmifb = BeanDefinitionBuilder
-						.rootBeanDefinition(HandlerMappingIntrospectorFactoryBean.class);
-				pc.getRegistry().registerBeanDefinition(HANDLER_MAPPING_INTROSPECTOR_FACTORY_BEAN_NAME,
-						hmifb.getBeanDefinition());
-
-				RootBeanDefinition hmi = new RootBeanDefinition(HANDLER_MAPPING_INTROSPECTOR_BEAN_NAME);
-				hmi.setFactoryBeanName(HANDLER_MAPPING_INTROSPECTOR_FACTORY_BEAN_NAME);
-				hmi.setFactoryMethodName("createHandlerMappingIntrospector");
-				pc.getRegistry().registerBeanDefinition(HANDLER_MAPPING_INTROSPECTOR_BEAN_NAME, hmi);
-			}
-			matcherBldr.addConstructorArgReference(HANDLER_MAPPING_INTROSPECTOR_BEAN_NAME);
+			matcherBldr.addConstructorArgValue(new RootBeanDefinition(HandlerMappingIntrospectorFactoryBean.class));
 		}
 
 		matcherBldr.addConstructorArgValue(path);

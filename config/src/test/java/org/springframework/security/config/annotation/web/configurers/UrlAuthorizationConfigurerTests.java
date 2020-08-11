@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,11 +36,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Rob Winch
+ * @author M.S. Dousti
  *
  */
 public class UrlAuthorizationConfigurerTests {
@@ -55,7 +58,7 @@ public class UrlAuthorizationConfigurerTests {
 
 	@Before
 	public void setup() {
-		this.request = new MockHttpServletRequest();
+		this.request = new MockHttpServletRequest("GET", "");
 		this.request.setMethod("GET");
 		this.response = new MockHttpServletResponse();
 		this.chain = new MockFilterChain();
@@ -70,7 +73,7 @@ public class UrlAuthorizationConfigurerTests {
 
 	@Test
 	public void mvcMatcher() throws Exception {
-		loadConfig(MvcMatcherConfig.class);
+		loadConfig(MvcMatcherConfig.class, LegacyMvcMatchingConfig.class);
 
 		this.request.setRequestURI("/path");
 		this.springSecurityFilterChain.doFilter(this.request, this.response, this.chain);
@@ -128,7 +131,7 @@ public class UrlAuthorizationConfigurerTests {
 
 	@Test
 	public void mvcMatcherServletPath() throws Exception {
-		loadConfig(MvcMatcherServletPathConfig.class);
+		loadConfig(MvcMatcherServletPathConfig.class, LegacyMvcMatchingConfig.class);
 
 		this.request.setServletPath("/spring");
 		this.request.setRequestURI("/spring/path");
@@ -200,6 +203,32 @@ public class UrlAuthorizationConfigurerTests {
 			public String path() {
 				return "path";
 			}
+		}
+	}
+
+	@Test
+	public void anonymousUrlAuthorization() {
+		loadConfig(AnonymousUrlAuthorizationConfig.class);
+	}
+
+	@EnableWebSecurity
+	@Configuration
+	static class AnonymousUrlAuthorizationConfig extends WebSecurityConfigurerAdapter {
+		@Override
+		public void configure(HttpSecurity http) throws Exception {
+			// @formatter:off
+			http
+				.apply(new UrlAuthorizationConfigurer<>(null)).getRegistry()
+					.anyRequest().anonymous();
+			// @formatter:on
+		}
+	}
+
+	@Configuration
+	static class LegacyMvcMatchingConfig implements WebMvcConfigurer {
+		@Override
+		public void configurePathMatch(PathMatchConfigurer configurer) {
+			configurer.setUseSuffixPatternMatch(true);
 		}
 	}
 

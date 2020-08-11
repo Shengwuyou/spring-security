@@ -10,19 +10,22 @@ dependencies {
 	compile 'org.springframework:spring-web'
 
 	optional 'com.fasterxml.jackson.core:jackson-databind'
+	optional 'io.projectreactor:reactor-core'
 	optional 'org.springframework:spring-jdbc'
 	optional 'org.springframework:spring-tx'
+	optional 'org.springframework:spring-webflux'
 	optional 'org.springframework:spring-webmvc'
 
 	provided 'javax.servlet:javax.servlet-api'
 
 	testCompile project(path: ':spring-security-core', configuration: 'tests')
 	testCompile 'commons-codec:commons-codec'
-	testCompile 'org.codehaus.groovy:groovy-all'
+	testCompile 'io.projectreactor:reactor-test'
+	testCompile 'javax.xml.bind:jaxb-api'
 	testCompile 'org.skyscreamer:jsonassert'
-	testCompile powerMockDependencies
-	testCompile spockDependencies
-	testCompile slf4jDependencies
+	testCompile 'org.springframework:spring-webflux'
+	testCompile 'org.synchronoss.cloud:nio-multipart-parser'
+	testCompile powerMock2Dependencies
 
 	testRuntime 'org.hsqldb:hsqldb'
 }

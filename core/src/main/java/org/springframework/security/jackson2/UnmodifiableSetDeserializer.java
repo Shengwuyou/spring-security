@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -43,17 +42,15 @@ class UnmodifiableSetDeserializer extends JsonDeserializer<Set> {
 	public Set deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
 		ObjectMapper mapper = (ObjectMapper) jp.getCodec();
 		JsonNode node = mapper.readTree(jp);
-		Set<Object> resultSet = new HashSet<Object>();
+		Set<Object> resultSet = new HashSet<>();
 		if (node != null) {
 			if (node instanceof ArrayNode) {
 				ArrayNode arrayNode = (ArrayNode) node;
-				Iterator<JsonNode> nodeIterator = arrayNode.iterator();
-				while (nodeIterator.hasNext()) {
-					JsonNode elementNode = nodeIterator.next();
-					resultSet.add(mapper.readValue(elementNode.toString(), Object.class));
+				for (JsonNode elementNode : arrayNode) {
+					resultSet.add(mapper.readValue(elementNode.traverse(mapper), Object.class));
 				}
 			} else {
-				resultSet.add(mapper.readValue(node.toString(), Object.class));
+				resultSet.add(mapper.readValue(node.traverse(mapper), Object.class));
 			}
 		}
 		return Collections.unmodifiableSet(resultSet);

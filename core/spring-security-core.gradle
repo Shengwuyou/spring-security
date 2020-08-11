@@ -1,3 +1,5 @@
+import java.util.concurrent.Callable
+
 apply plugin: 'io.spring.convention.spring-module'
 
 def includeProject = project(':spring-security-crypto')
@@ -24,7 +26,7 @@ dependencies {
 	optional 'org.springframework:spring-jdbc'
 	optional 'org.springframework:spring-tx'
 
-	testCompile powerMockDependencies
+	testCompile powerMock2Dependencies
 	testCompile 'commons-collections:commons-collections'
 	testCompile 'io.projectreactor:reactor-test'
 	testCompile 'org.skyscreamer:jsonassert'
@@ -34,16 +36,29 @@ dependencies {
 	testRuntime 'org.hsqldb:hsqldb'
 }
 
-classes.doLast {
-	copy {
-		from includeProject.sourceSets.main.output
-		into sourceSets.main.java.outputDir
+task springVersion(type: org.gradle.api.tasks.WriteProperties) {
+	outputFile = file("${buildDir}/versions/spring-security.versions")
+	property("org.springframework:spring-core", springVersion())
+}
+
+tasks.processResources {
+	into('META-INF') {
+		from project.tasks.springVersion.outputs
 	}
 }
+
+tasks.jar.from { includeProject.sourceSets.main.output }
 
 tasks.sourcesJar.from {includeProject.sourceSets.main.java}
 
 configure(project.tasks.withType(Test)) {
-	systemProperties['springSecurityVersion'] = version
-	systemProperties['springVersion'] = project.dependencyManagement.managedVersions['org.springframework:spring-core']
+	doFirst {
+		systemProperties['springSecurityVersion'] = version
+		systemProperties['springVersion'] = springVersion().call()
+	}
+}
+
+Callable<String> springVersion() {
+	return  (Callable<String>) { project.configurations.compile.resolvedConfiguration.resolvedArtifacts
+    .find { it.name == 'spring-core' }.moduleVersion.id.version }
 }

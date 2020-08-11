@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,12 @@
 package org.springframework.security.openid;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.junit.*;
+import org.mockito.ArgumentMatchers;
 import org.openid4java.association.AssociationException;
 import org.openid4java.consumer.ConsumerException;
 import org.openid4java.consumer.ConsumerManager;
@@ -39,6 +40,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import java.util.*;
 
 /**
+ * @deprecated The OpenID 1.0 and 2.0 protocols have been deprecated and users are
+ * <a href="https://openid.net/specs/openid-connect-migration-1_0.html">encouraged to migrate</a>
+ * to <a href="https://openid.net/connect/">OpenID Connect</a>, which is supported by <code>spring-security-oauth2</code>.
  * @author Luke Taylor
  */
 public class OpenID4JavaConsumerTests {
@@ -52,9 +56,9 @@ public class OpenID4JavaConsumerTests {
 		AuthRequest authReq = mock(AuthRequest.class);
 		DiscoveryInformation di = mock(DiscoveryInformation.class);
 
-		when(mgr.authenticate(any(DiscoveryInformation.class), anyString(), anyString()))
+		when(mgr.authenticate(any(DiscoveryInformation.class), any(), any()))
 				.thenReturn(authReq);
-		when(mgr.associate(anyList())).thenReturn(di);
+		when(mgr.associate(any())).thenReturn(di);
 
 		OpenID4JavaConsumer consumer = new OpenID4JavaConsumer(mgr,
 				new MockAttributesFactory());
@@ -79,7 +83,7 @@ public class OpenID4JavaConsumerTests {
 		ConsumerManager mgr = mock(ConsumerManager.class);
 		OpenID4JavaConsumer consumer = new OpenID4JavaConsumer(mgr,
 				new NullAxFetchListFactory());
-		when(mgr.discover(anyString())).thenThrow(new DiscoveryException("msg"));
+		when(mgr.discover(any())).thenThrow(new DiscoveryException("msg"));
 		consumer.beginConsumption(new MockHttpServletRequest(), "", "", "");
 	}
 
@@ -90,9 +94,8 @@ public class OpenID4JavaConsumerTests {
 		OpenID4JavaConsumer consumer = new OpenID4JavaConsumer(mgr,
 				new NullAxFetchListFactory());
 
-		when(mgr.authenticate(any(DiscoveryInformation.class), anyString(), anyString()))
+		when(mgr.authenticate(ArgumentMatchers.<DiscoveryInformation>any(), any(), any()))
 				.thenThrow(new MessageException("msg"), new ConsumerException("msg"));
-
 		try {
 			consumer.beginConsumption(new MockHttpServletRequest(), "", "", "");
 			fail("OpenIDConsumerException was not thrown");
@@ -117,7 +120,7 @@ public class OpenID4JavaConsumerTests {
 		DiscoveryInformation di = mock(DiscoveryInformation.class);
 
 		when(
-				mgr.verify(anyString(), any(ParameterList.class),
+				mgr.verify(any(), any(ParameterList.class),
 						any(DiscoveryInformation.class))).thenReturn(vr);
 
 		MockHttpServletRequest request = new MockHttpServletRequest();
@@ -136,7 +139,7 @@ public class OpenID4JavaConsumerTests {
 				new NullAxFetchListFactory());
 
 		when(
-				mgr.verify(anyString(), any(ParameterList.class),
+				mgr.verify(any(), any(ParameterList.class),
 						any(DiscoveryInformation.class)))
 				.thenThrow(new MessageException(""))
 				.thenThrow(new AssociationException(""))
@@ -176,15 +179,11 @@ public class OpenID4JavaConsumerTests {
 				new NullAxFetchListFactory());
 		VerificationResult vr = mock(VerificationResult.class);
 		DiscoveryInformation di = mock(DiscoveryInformation.class);
-		Identifier id = new Identifier() {
-			public String getIdentifier() {
-				return "id";
-			}
-		};
+		Identifier id = (Identifier) () -> "id";
 		Message msg = mock(Message.class);
 
 		when(
-				mgr.verify(anyString(), any(ParameterList.class),
+				mgr.verify(any(), any(ParameterList.class),
 						any(DiscoveryInformation.class))).thenReturn(vr);
 		when(vr.getVerifiedId()).thenReturn(id);
 		when(vr.getAuthResponse()).thenReturn(msg);

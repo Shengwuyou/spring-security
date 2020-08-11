@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -167,6 +167,9 @@ public final class RememberMeConfigurer<H extends HttpSecurityBuilder<H>>
 	/**
 	 * Sets the key to identify tokens created for remember me authentication. Default is
 	 * a secure randomly generated key.
+	 * If {@link #rememberMeServices(RememberMeServices)} is specified and is of type
+	 * {@link AbstractRememberMeServices}, then the default is the key set in
+	 * {@link AbstractRememberMeServices}.
 	 *
 	 * @param key the key to identify tokens created for remember me authentication
 	 * @return the {@link RememberMeConfigurer} for further customization
@@ -282,7 +285,7 @@ public final class RememberMeConfigurer<H extends HttpSecurityBuilder<H>>
 	}
 
 	@Override
-	public void configure(H http) throws Exception {
+	public void configure(H http) {
 		RememberMeAuthenticationFilter rememberMeFilter = new RememberMeAuthenticationFilter(
 				http.getSharedObject(AuthenticationManager.class),
 				this.rememberMeServices);
@@ -373,10 +376,8 @@ public final class RememberMeConfigurer<H extends HttpSecurityBuilder<H>>
 	 * @param http the {@link HttpSecurity} to lookup shared objects
 	 * @param key the {@link #key(String)}
 	 * @return the {@link RememberMeServices} to use
-	 * @throws Exception
 	 */
-	private AbstractRememberMeServices createRememberMeServices(H http, String key)
-			throws Exception {
+	private AbstractRememberMeServices createRememberMeServices(H http, String key) {
 		return this.tokenRepository == null
 				? createTokenBasedRememberMeServices(http, key)
 				: createPersistentRememberMeServices(http, key);
@@ -430,14 +431,22 @@ public final class RememberMeConfigurer<H extends HttpSecurityBuilder<H>>
 	}
 
 	/**
-	 * Gets the key to use for validating remember me tokens. Either the value passed into
-	 * {@link #key(String)}, or a secure random string if none was specified.
+	 * Gets the key to use for validating remember me tokens. If a value was passed into
+	 * {@link #key(String)}, then that is returned.
+	 * Alternatively, if a key was specified in the
+	 * {@link #rememberMeServices(RememberMeServices)}}, then that is returned.
+	 * If no key was specified in either of those cases, then a secure random string is
+	 * generated.
 	 *
 	 * @return the remember me key to use
 	 */
 	private String getKey() {
 		if (this.key == null) {
-			this.key = UUID.randomUUID().toString();
+			if (this.rememberMeServices instanceof AbstractRememberMeServices) {
+				this.key = ((AbstractRememberMeServices) rememberMeServices).getKey();
+			} else {
+				this.key = UUID.randomUUID().toString();
+			}
 		}
 		return this.key;
 	}

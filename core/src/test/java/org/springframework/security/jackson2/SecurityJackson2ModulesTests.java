@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,6 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.annotation.*;
+import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -43,20 +44,20 @@ public class SecurityJackson2ModulesTests {
 	}
 
 	@Test
-	public void readValueWhenNotWhitelistedOrMappedThenThrowsException() throws Exception {
-		String content = "{\"@class\":\"org.springframework.security.jackson2.SecurityJackson2ModulesTests$NotWhitelisted\",\"property\":\"bar\"}";
+	public void readValueWhenNotAllowedOrMappedThenThrowsException() {
+		String content = "{\"@class\":\"org.springframework.security.jackson2.SecurityJackson2ModulesTests$NotAllowlisted\",\"property\":\"bar\"}";
 		assertThatThrownBy(() -> {
 				mapper.readValue(content, Object.class);
 			}
-		).hasStackTraceContaining("whitelisted");
+		).hasStackTraceContaining("allowlist");
 	}
 
 	@Test
 	public void readValueWhenExplicitDefaultTypingAfterSecuritySetupThenReadsAsSpecificType() throws Exception {
 		mapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
-		String content = "{\"@class\":\"org.springframework.security.jackson2.SecurityJackson2ModulesTests$NotWhitelisted\",\"property\":\"bar\"}";
+		String content = "{\"@class\":\"org.springframework.security.jackson2.SecurityJackson2ModulesTests$NotAllowlisted\",\"property\":\"bar\"}";
 
-		assertThat(mapper.readValue(content, Object.class)).isInstanceOf(NotWhitelisted.class);
+		assertThat(mapper.readValue(content, Object.class)).isInstanceOf(NotAllowlisted.class);
 	}
 
 	@Test
@@ -64,24 +65,32 @@ public class SecurityJackson2ModulesTests {
 		mapper = new ObjectMapper();
 		mapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
 		SecurityJackson2Modules.enableDefaultTyping(mapper);
-		String content = "{\"@class\":\"org.springframework.security.jackson2.SecurityJackson2ModulesTests$NotWhitelisted\",\"property\":\"bar\"}";
+		String content = "{\"@class\":\"org.springframework.security.jackson2.SecurityJackson2ModulesTests$NotAllowlisted\",\"property\":\"bar\"}";
 
-		assertThat(mapper.readValue(content, Object.class)).isInstanceOf(NotWhitelisted.class);
+		assertThat(mapper.readValue(content, Object.class)).isInstanceOf(NotAllowlisted.class);
 	}
 
 	@Test
 	public void readValueWhenAnnotatedThenReadsAsSpecificType() throws Exception {
-		String content = "{\"@class\":\"org.springframework.security.jackson2.SecurityJackson2ModulesTests$NotWhitelistedButAnnotated\",\"property\":\"bar\"}";
+		String content = "{\"@class\":\"org.springframework.security.jackson2.SecurityJackson2ModulesTests$NotAllowlistedButAnnotated\",\"property\":\"bar\"}";
 
-		assertThat(mapper.readValue(content, Object.class)).isInstanceOf(NotWhitelistedButAnnotated.class);
+		assertThat(mapper.readValue(content, Object.class)).isInstanceOf(NotAllowlistedButAnnotated.class);
 	}
 
 	@Test
 	public void readValueWhenMixinProvidedThenReadsAsSpecificType() throws Exception {
-		mapper.addMixIn(NotWhitelisted.class, NotWhitelistedMixin.class);
-		String content = "{\"@class\":\"org.springframework.security.jackson2.SecurityJackson2ModulesTests$NotWhitelisted\",\"property\":\"bar\"}";
+		mapper.addMixIn(NotAllowlisted.class, NotAllowlistedMixin.class);
+		String content = "{\"@class\":\"org.springframework.security.jackson2.SecurityJackson2ModulesTests$NotAllowlisted\",\"property\":\"bar\"}";
 
-		assertThat(mapper.readValue(content, Object.class)).isInstanceOf(NotWhitelisted.class);
+		assertThat(mapper.readValue(content, Object.class)).isInstanceOf(NotAllowlisted.class);
+	}
+
+	@Test
+	public void readValueWhenHashMapThenReadsAsSpecificType() throws Exception {
+		mapper.addMixIn(NotAllowlisted.class, NotAllowlistedMixin.class);
+		String content = "{\"@class\":\"java.util.HashMap\"}";
+
+		assertThat(mapper.readValue(content, Object.class)).isInstanceOf(HashMap.class);
 	}
 
 	@Target({ ElementType.TYPE, ElementType.ANNOTATION_TYPE })
@@ -90,7 +99,7 @@ public class SecurityJackson2ModulesTests {
 	public @interface NotJacksonAnnotation {}
 
 	@NotJacksonAnnotation
-	static class NotWhitelisted {
+	static class NotAllowlisted {
 		private String property = "bar";
 
 		public String getProperty() {
@@ -102,7 +111,7 @@ public class SecurityJackson2ModulesTests {
 	}
 
 	@JsonIgnoreType(false)
-	static class NotWhitelistedButAnnotated {
+	static class NotAllowlistedButAnnotated {
 		private String property = "bar";
 
 		public String getProperty() {
@@ -117,7 +126,7 @@ public class SecurityJackson2ModulesTests {
 	@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE,
 		isGetterVisibility = JsonAutoDetect.Visibility.NONE)
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	abstract class NotWhitelistedMixin {
+	abstract class NotAllowlistedMixin {
 
 	}
 }

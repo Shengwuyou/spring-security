@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,14 +19,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.authentication.configurers.GlobalAuthenticationConfigurerAdapter;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
- * Lazily initializes the global authentication with a {@link UserDetailsService} if it is
- * not yet configured and there is only a single Bean of that type. Optionally, if a
- * {@link PasswordEncoder} is defined will wire this up too.
+ * Lazily initializes the global authentication with an {@link AuthenticationProvider} if it is
+ * not yet configured and there is only a single Bean of that type.
  *
  * @author Rob Winch
  * @since 4.1
@@ -43,20 +39,20 @@ class InitializeAuthenticationProviderBeanManagerConfigurer
 	/**
 	 * @param context the ApplicationContext to look up beans.
 	 */
-	public InitializeAuthenticationProviderBeanManagerConfigurer(
+	InitializeAuthenticationProviderBeanManagerConfigurer(
 			ApplicationContext context) {
 		this.context = context;
 	}
 
 	@Override
 	public void init(AuthenticationManagerBuilder auth) throws Exception {
-		auth.apply(new InitializeUserDetailsManagerConfigurer());
+		auth.apply(new InitializeAuthenticationProviderManagerConfigurer());
 	}
 
-	class InitializeUserDetailsManagerConfigurer
+	class InitializeAuthenticationProviderManagerConfigurer
 			extends GlobalAuthenticationConfigurerAdapter {
 		@Override
-		public void configure(AuthenticationManagerBuilder auth) throws Exception {
+		public void configure(AuthenticationManagerBuilder auth) {
 			if (auth.isConfigured()) {
 				return;
 			}
@@ -71,17 +67,17 @@ class InitializeAuthenticationProviderBeanManagerConfigurer
 		}
 
 		/**
-		 * @return
+		 * @return a bean of the requested class if there's just a single registered component, null otherwise.
 		 */
 		private <T> T getBeanOrNull(Class<T> type) {
-			String[] userDetailsBeanNames = InitializeAuthenticationProviderBeanManagerConfigurer.this.context
+			String[] beanNames = InitializeAuthenticationProviderBeanManagerConfigurer.this.context
 					.getBeanNamesForType(type);
-			if (userDetailsBeanNames.length != 1) {
+			if (beanNames.length != 1) {
 				return null;
 			}
 
 			return InitializeAuthenticationProviderBeanManagerConfigurer.this.context
-					.getBean(userDetailsBeanNames[0], type);
+					.getBean(beanNames[0], type);
 		}
 	}
 }

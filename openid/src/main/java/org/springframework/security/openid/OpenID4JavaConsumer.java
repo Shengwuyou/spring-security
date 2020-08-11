@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,6 +41,9 @@ import org.openid4java.message.ax.FetchResponse;
 import org.springframework.util.StringUtils;
 
 /**
+ * @deprecated The OpenID 1.0 and 2.0 protocols have been deprecated and users are
+ * <a href="https://openid.net/specs/openid-connect-migration-1_0.html">encouraged to migrate</a>
+ * to <a href="https://openid.net/connect/">OpenID Connect</a>, which is supported by <code>spring-security-oauth2</code>.
  * @author Ray Krueger
  * @author Luke Taylor
  */
@@ -70,7 +73,7 @@ public class OpenID4JavaConsumer implements OpenIDConsumer {
 	}
 
 	public OpenID4JavaConsumer(ConsumerManager consumerManager,
-			AxFetchListFactory attributesToFetchFactory) throws ConsumerException {
+			AxFetchListFactory attributesToFetchFactory) {
 		this.consumerManager = consumerManager;
 		this.attributesToFetchFactory = attributesToFetchFactory;
 	}
@@ -116,11 +119,7 @@ public class OpenID4JavaConsumer implements OpenIDConsumer {
 				authReq.addExtension(fetchRequest);
 			}
 		}
-		catch (MessageException e) {
-			throw new OpenIDConsumerException(
-					"Error processing ConsumerManager authentication", e);
-		}
-		catch (ConsumerException e) {
+		catch (MessageException | ConsumerException e) {
 			throw new OpenIDConsumerException(
 					"Error processing ConsumerManager authentication", e);
 		}
@@ -164,13 +163,7 @@ public class OpenID4JavaConsumer implements OpenIDConsumer {
 			verification = consumerManager.verify(receivingURL.toString(), openidResp,
 					discovered);
 		}
-		catch (MessageException e) {
-			throw new OpenIDConsumerException("Error verifying openid response", e);
-		}
-		catch (DiscoveryException e) {
-			throw new OpenIDConsumerException("Error verifying openid response", e);
-		}
-		catch (AssociationException e) {
+		catch (MessageException | AssociationException | DiscoveryException e) {
 			throw new OpenIDConsumerException("Error verifying openid response", e);
 		}
 
@@ -208,7 +201,7 @@ public class OpenID4JavaConsumer implements OpenIDConsumer {
 			MessageExtension ext = authSuccess.getExtension(AxMessage.OPENID_NS_AX);
 			if (ext instanceof FetchResponse) {
 				FetchResponse fetchResp = (FetchResponse) ext;
-				attributes = new ArrayList<OpenIDAttribute>(attributesToFetch.size());
+				attributes = new ArrayList<>(attributesToFetch.size());
 
 				for (OpenIDAttribute attr : attributesToFetch) {
 					List<String> values = fetchResp.getAttributeValues(attr.getName());

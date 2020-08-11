@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +27,6 @@ import java.security.UnrecoverableKeyException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -40,6 +39,7 @@ import org.springframework.util.FileCopyUtils;
  * @author Luke Taylor
  * @author Rob Winch
  * @author Gunnar Hillert
+ * @author Evgeniy Cheban
  * @since 3.0
  */
 public class ApacheDSContainerTests {
@@ -197,8 +197,8 @@ public class ApacheDSContainerTests {
 	}
 
 	private List<Integer> getDefaultPorts(int count) throws IOException {
-		List<ServerSocket> connections = new ArrayList<ServerSocket>();
-		List<Integer> availablePorts = new ArrayList<Integer>(count);
+		List<ServerSocket> connections = new ArrayList<>();
+		List<Integer> availablePorts = new ArrayList<>(count);
 		try {
 			for (int i = 0; i < count; i++) {
 				ServerSocket socket = new ServerSocket(0);
@@ -211,6 +211,22 @@ public class ApacheDSContainerTests {
 			for (ServerSocket conn : connections) {
 				conn.close();
 			}
+		}
+	}
+
+	@Test
+	public void afterPropertiesSetWhenPortIsZeroThenRandomPortIsSelected() throws Exception {
+		ApacheDSContainer server = new ApacheDSContainer("dc=springframework,dc=org",
+				"classpath:test-server.ldif");
+		server.setPort(0);
+		try {
+			server.afterPropertiesSet();
+
+			assertThat(server.getPort()).isEqualTo(0);
+			assertThat(server.getLocalPort()).isNotEqualTo(0);
+		}
+		finally {
+			server.destroy();
 		}
 	}
 }

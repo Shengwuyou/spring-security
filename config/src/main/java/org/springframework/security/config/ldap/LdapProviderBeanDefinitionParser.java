@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -103,12 +103,6 @@ public class LdapProviderBeanDefinitionParser implements BeanDefinitionParser {
 						passwordEncoderElement, parserContext);
 				authenticatorBuilder.addPropertyValue("passwordEncoder",
 						pep.getPasswordEncoder());
-
-				if (pep.getSaltSource() != null) {
-					parserContext.getReaderContext().warning(
-							"Salt source information isn't valid when used with LDAP",
-							passwordEncoderElement);
-				}
 			}
 			else if (StringUtils.hasText(hash)) {
 				authenticatorBuilder.addPropertyValue("passwordEncoder",

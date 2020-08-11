@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -92,11 +92,11 @@ public abstract class AclFormattingUtils {
 	 */
 	public static String printBinary(int mask, char code) {
 		Assert.doesNotContain(Character.toString(code),
-				Character.toString(Permission.RESERVED_ON), Permission.RESERVED_ON
-						+ " is a reserved character code");
+				Character.toString(Permission.RESERVED_ON),
+				() -> Permission.RESERVED_ON + " is a reserved character code");
 		Assert.doesNotContain(Character.toString(code),
-				Character.toString(Permission.RESERVED_OFF), Permission.RESERVED_OFF
-						+ " is a reserved character code");
+				Character.toString(Permission.RESERVED_OFF),
+				() -> Permission.RESERVED_OFF + " is a reserved character code");
 
 		return printBinary(mask, Permission.RESERVED_ON, Permission.RESERVED_OFF)
 				.replace(Permission.RESERVED_ON, code);

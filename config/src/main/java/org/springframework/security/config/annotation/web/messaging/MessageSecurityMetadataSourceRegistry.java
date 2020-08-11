@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -51,9 +51,9 @@ public class MessageSecurityMetadataSourceRegistry {
 	private static final String fullyAuthenticated = "fullyAuthenticated";
 	private static final String rememberMe = "rememberMe";
 
-	private SecurityExpressionHandler<Message<Object>> expressionHandler = new DefaultMessageSecurityExpressionHandler<Object>();
+	private SecurityExpressionHandler<Message<Object>> expressionHandler = new DefaultMessageSecurityExpressionHandler<>();
 
-	private final LinkedHashMap<MatcherBuilder, String> matcherToExpression = new LinkedHashMap<MatcherBuilder, String>();
+	private final LinkedHashMap<MatcherBuilder, String> matcherToExpression = new LinkedHashMap<>();
 
 	private DelegatingPathMatcher pathMatcher = new DelegatingPathMatcher();
 
@@ -160,7 +160,7 @@ public class MessageSecurityMetadataSourceRegistry {
 	 * @see {@link MessageSecurityMetadataSourceRegistry#simpDestPathMatcher(PathMatcher)}
 	 */
 	private Constraint simpDestMatchers(SimpMessageType type, String... patterns) {
-		List<MatcherBuilder> matchers = new ArrayList<MatcherBuilder>(patterns.length);
+		List<MatcherBuilder> matchers = new ArrayList<>(patterns.length);
 		for (String pattern : patterns) {
 			matchers.add(new PathMatcherMessageMatcherBuilder(pattern, type));
 		}
@@ -201,7 +201,7 @@ public class MessageSecurityMetadataSourceRegistry {
 	 * instances
 	 */
 	public Constraint matchers(MessageMatcher<?>... matchers) {
-		List<MatcherBuilder> builders = new ArrayList<MatcherBuilder>(matchers.length);
+		List<MatcherBuilder> builders = new ArrayList<>(matchers.length);
 		for (MessageMatcher<?> matcher : matchers) {
 			builders.add(new PreBuiltMatcherBuilder(matcher));
 		}
@@ -233,7 +233,7 @@ public class MessageSecurityMetadataSourceRegistry {
 	 * @return the {@link MessageSecurityMetadataSource} to use
 	 */
 	protected MessageSecurityMetadataSource createMetadataSource() {
-		LinkedHashMap<MessageMatcher<?>, String> matcherToExpression = new LinkedHashMap<MessageMatcher<?>, String>();
+		LinkedHashMap<MessageMatcher<?>, String> matcherToExpression = new LinkedHashMap<>();
 		for (Map.Entry<MatcherBuilder, String> entry : this.matcherToExpression
 				.entrySet()) {
 			matcherToExpression.put(entry.getKey().build(), entry.getValue());

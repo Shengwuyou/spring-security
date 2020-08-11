@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,6 +35,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 /**
  * Tests {@link OpenIDAuthenticationProvider}
  *
+ * @deprecated The OpenID 1.0 and 2.0 protocols have been deprecated and users are
+ * <a href="https://openid.net/specs/openid-connect-migration-1_0.html">encouraged to migrate</a>
+ * to <a href="https://openid.net/connect/">OpenID Connect</a>, which is supported by <code>spring-security-oauth2</code>.
  * @author Robin Bramley, Opsera Ltd
  */
 public class OpenIDAuthenticationProviderTests {
@@ -104,7 +107,7 @@ public class OpenIDAuthenticationProviderTests {
 	public void testAuthenticateFailure() {
 		OpenIDAuthenticationProvider provider = new OpenIDAuthenticationProvider();
 		provider.setAuthenticationUserDetailsService(
-				new UserDetailsByNameServiceWrapper<OpenIDAuthenticationToken>(
+				new UserDetailsByNameServiceWrapper<>(
 						new MockUserDetailsService()));
 
 		Authentication preAuth = new OpenIDAuthenticationToken(
@@ -216,7 +219,7 @@ public class OpenIDAuthenticationProviderTests {
 
 		UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
 				USERNAME, "password");
-		assertThat(provider.authenticate(token)).isEqualTo(null);
+		assertThat(provider.authenticate(token)).isNull();
 	}
 
 	/*

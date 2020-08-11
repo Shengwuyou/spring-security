@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.security.core.userdetails;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.AuthenticatedPrincipal;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -42,7 +41,7 @@ import java.util.Collection;
  *
  * @author Ben Alex
  */
-public interface UserDetails extends AuthenticatedPrincipal, Serializable {
+public interface UserDetails extends Serializable {
 	// ~ Methods
 	// ========================================================================================================
 
@@ -100,14 +99,4 @@ public interface UserDetails extends AuthenticatedPrincipal, Serializable {
 	 * @return <code>true</code> if the user is enabled, <code>false</code> otherwise
 	 */
 	boolean isEnabled();
-
-	/**
-	 * Returns the name of the user. Cannot return <code>null</code>.
-	 * The default implementation of this method returns {@link #getUsername()}.
-	 *
-	 * @return the name of the user (never <code>null</code>)
-	 */
-	default String getName() {
-		return getUsername();
-	}
 }

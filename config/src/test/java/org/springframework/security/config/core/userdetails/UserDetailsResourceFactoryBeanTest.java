@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ package org.springframework.security.config.core.userdetails;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,9 +29,6 @@ import java.util.Collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 
 /**
  * @author Rob Winch
@@ -45,14 +42,14 @@ public class UserDetailsResourceFactoryBeanTest {
 	UserDetailsResourceFactoryBean factory = new UserDetailsResourceFactoryBean();
 
 	@Test
-	public void setResourceLoaderWhenNullThenThrowsException() throws Exception {
+	public void setResourceLoaderWhenNullThenThrowsException() {
 		assertThatThrownBy(() -> factory.setResourceLoader(null) )
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasStackTraceContaining("resourceLoader cannot be null");
 	}
 
 	@Test
-	public void getObjectWhenPropertiesResourceLocationNullThenThrowsIllegalStateException() throws Exception {
+	public void getObjectWhenPropertiesResourceLocationNullThenThrowsIllegalStateException() {
 		factory.setResourceLoader(resourceLoader);
 
 		assertThatThrownBy(() -> factory.getObject() )
@@ -77,7 +74,7 @@ public class UserDetailsResourceFactoryBeanTest {
 	}
 
 	@Test
-	public void getObjectWhenInvalidUserThenThrowsMeaningfulException() throws Exception {
+	public void getObjectWhenInvalidUserThenThrowsMeaningfulException() {
 		factory.setResource(new InMemoryResource("user=invalidFormatHere"));
 
 		assertThatThrownBy(() -> factory.getObject() )

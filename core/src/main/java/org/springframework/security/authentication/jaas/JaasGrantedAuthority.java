@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package org.springframework.security.authentication.jaas;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.SpringSecurityCoreVersion;
+import org.springframework.util.Assert;
 
 import java.security.Principal;
 
@@ -37,6 +38,8 @@ public final class JaasGrantedAuthority implements GrantedAuthority {
 	private final Principal principal;
 
 	public JaasGrantedAuthority(String role, Principal principal) {
+		Assert.notNull(role, "role cannot be null");
+		Assert.notNull(principal, "principal cannot be null");
 		this.role = role;
 		this.principal = principal;
 	}
@@ -48,14 +51,19 @@ public final class JaasGrantedAuthority implements GrantedAuthority {
 		return principal;
 	}
 
+	@Override
 	public String getAuthority() {
 		return role;
 	}
 
+	@Override
 	public int hashCode() {
-		return 31 ^ principal.hashCode() ^ role.hashCode();
+		int result = this.principal.hashCode();
+		result = 31 * result + this.role.hashCode();
+		return result;
 	}
 
+	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
 			return true;
@@ -69,6 +77,7 @@ public final class JaasGrantedAuthority implements GrantedAuthority {
 		return false;
 	}
 
+	@Override
 	public String toString() {
 		return "Jaas Authority [" + role + "," + principal + "]";
 	}

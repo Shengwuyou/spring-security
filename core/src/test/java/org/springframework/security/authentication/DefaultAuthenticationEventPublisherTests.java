@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,7 @@ import static org.mockito.Mockito.*;
 
 import org.junit.*;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
 import org.springframework.security.authentication.event.AuthenticationFailureCredentialsExpiredEvent;
 import org.springframework.security.authentication.event.AuthenticationFailureDisabledEvent;
@@ -27,6 +28,7 @@ import org.springframework.security.authentication.event.AuthenticationFailureLo
 import org.springframework.security.authentication.event.AuthenticationFailureProviderNotFoundEvent;
 import org.springframework.security.authentication.event.AuthenticationFailureServiceExceptionEvent;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
+import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -40,7 +42,7 @@ public class DefaultAuthenticationEventPublisherTests {
 	DefaultAuthenticationEventPublisher publisher;
 
 	@Test
-	public void expectedDefaultMappingsAreSatisfied() throws Exception {
+	public void expectedDefaultMappingsAreSatisfied() {
 		publisher = new DefaultAuthenticationEventPublisher();
 		ApplicationEventPublisher appPublisher = mock(ApplicationEventPublisher.class);
 		publisher.setApplicationEventPublisher(appPublisher);
@@ -123,7 +125,7 @@ public class DefaultAuthenticationEventPublisherTests {
 	}
 
 	@Test
-	public void unknownFailureExceptionIsIgnored() throws Exception {
+	public void unknownFailureExceptionIsIgnored() {
 		publisher = new DefaultAuthenticationEventPublisher();
 		Properties p = new Properties();
 		p.put(MockAuthenticationException.class.getName(),
@@ -137,9 +139,81 @@ public class DefaultAuthenticationEventPublisherTests {
 		verifyZeroInteractions(appPublisher);
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void emptyMapCausesException() {
+		Map<Class<? extends AuthenticationException>,
+				Class<? extends AbstractAuthenticationFailureEvent>> mappings = new HashMap<>();
+		publisher = new DefaultAuthenticationEventPublisher();
+		publisher.setAdditionalExceptionMappings(mappings);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void missingExceptionClassCausesException() {
+		Map<Class<? extends AuthenticationException>,
+				Class<? extends AbstractAuthenticationFailureEvent>> mappings = new HashMap<>();
+		mappings.put(null, AuthenticationFailureLockedEvent.class);
+		publisher = new DefaultAuthenticationEventPublisher();
+		publisher.setAdditionalExceptionMappings(mappings);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void missingEventClassAsMapValueCausesException() {
+		Map<Class<? extends AuthenticationException>,
+				Class<? extends AbstractAuthenticationFailureEvent>> mappings = new HashMap<>();
+		mappings.put(LockedException.class, null);
+		publisher = new DefaultAuthenticationEventPublisher();
+		publisher.setAdditionalExceptionMappings(mappings);
+	}
+
+	@Test
+	public void additionalExceptionMappingsUsingMapAreSupported() {
+		publisher = new DefaultAuthenticationEventPublisher();
+		Map<Class<? extends AuthenticationException>,
+				Class<? extends AbstractAuthenticationFailureEvent>> mappings = new HashMap<>();
+		mappings.put(MockAuthenticationException.class, AuthenticationFailureDisabledEvent.class);
+		publisher.setAdditionalExceptionMappings(mappings);
+		ApplicationEventPublisher appPublisher = mock(ApplicationEventPublisher.class);
+
+		publisher.setApplicationEventPublisher(appPublisher);
+		publisher.publishAuthenticationFailure(new MockAuthenticationException("test"),
+				mock(Authentication.class));
+		verify(appPublisher).publishEvent(isA(AuthenticationFailureDisabledEvent.class));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void defaultAuthenticationFailureEventClassSetNullThen() {
+		publisher = new DefaultAuthenticationEventPublisher();
+		publisher.setDefaultAuthenticationFailureEvent(null);
+	}
+
+	@Test
+	public void defaultAuthenticationFailureEventIsPublished() {
+		publisher = new DefaultAuthenticationEventPublisher();
+		publisher.setDefaultAuthenticationFailureEvent(AuthenticationFailureBadCredentialsEvent.class);
+		ApplicationEventPublisher appPublisher = mock(ApplicationEventPublisher.class);
+
+		publisher.setApplicationEventPublisher(appPublisher);
+		publisher.publishAuthenticationFailure(new AuthenticationException("") {
+		}, mock(Authentication.class));
+		verify(appPublisher).publishEvent(isA(AuthenticationFailureBadCredentialsEvent.class));
+	}
+
+	@Test(expected = RuntimeException.class)
+	public void defaultAuthenticationFailureEventMissingAppropriateConstructorThen() {
+		publisher = new DefaultAuthenticationEventPublisher();
+		publisher.setDefaultAuthenticationFailureEvent(AuthenticationFailureEventWithoutAppropriateConstructor.class);
+	}
+
+	private static final class AuthenticationFailureEventWithoutAppropriateConstructor extends
+			AbstractAuthenticationFailureEvent {
+		AuthenticationFailureEventWithoutAppropriateConstructor(Authentication auth) {
+			super(auth, new AuthenticationException("") {});
+		}
+	}
+
 	private static final class MockAuthenticationException extends
 			AuthenticationException {
-		public MockAuthenticationException(String msg) {
+		MockAuthenticationException(String msg) {
 			super(msg);
 		}
 	}

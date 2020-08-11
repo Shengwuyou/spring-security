@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -90,6 +90,7 @@ public class RememberMeAuthenticationToken extends AbstractAuthenticationToken {
 	 *
 	 * @return an empty String
 	 */
+	@Override
 	public Object getCredentials() {
 		return "";
 	}
@@ -98,10 +99,12 @@ public class RememberMeAuthenticationToken extends AbstractAuthenticationToken {
 		return this.keyHash;
 	}
 
+	@Override
 	public Object getPrincipal() {
 		return this.principal;
 	}
 
+	@Override
 	public boolean equals(Object obj) {
 		if (!super.equals(obj)) {
 			return false;
@@ -120,4 +123,10 @@ public class RememberMeAuthenticationToken extends AbstractAuthenticationToken {
 		return false;
 	}
 
+	@Override
+	public int hashCode() {
+		int result = super.hashCode();
+		result = 31 * result + this.keyHash;
+		return result;
+	}
 }

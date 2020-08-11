@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -78,6 +78,7 @@ public final class DelegatingSecurityContextCallable<V> implements Callable<V> {
 		this(delegate, SecurityContextHolder.getContext());
 	}
 
+	@Override
 	public V call() throws Exception {
 		this.originalSecurityContext = SecurityContextHolder.getContext();
 
@@ -87,7 +88,7 @@ public final class DelegatingSecurityContextCallable<V> implements Callable<V> {
 		}
 		finally {
 			SecurityContext emptyContext = SecurityContextHolder.createEmptyContext();
-			if(emptyContext.equals(originalSecurityContext)) {
+			if (emptyContext.equals(originalSecurityContext)) {
 				SecurityContextHolder.clearContext();
 			} else {
 				SecurityContextHolder.setContext(originalSecurityContext);
@@ -96,6 +97,7 @@ public final class DelegatingSecurityContextCallable<V> implements Callable<V> {
 		}
 	}
 
+	@Override
 	public String toString() {
 		return delegate.toString();
 	}
@@ -114,8 +116,8 @@ public final class DelegatingSecurityContextCallable<V> implements Callable<V> {
 	 */
 	public static <V> Callable<V> create(Callable<V> delegate,
 			SecurityContext securityContext) {
-		return securityContext == null ? new DelegatingSecurityContextCallable<V>(
-				delegate) : new DelegatingSecurityContextCallable<V>(delegate,
+		return securityContext == null ? new DelegatingSecurityContextCallable<>(
+				delegate) : new DelegatingSecurityContextCallable<>(delegate,
 				securityContext);
 	}
 }

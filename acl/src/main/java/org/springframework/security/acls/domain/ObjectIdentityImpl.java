@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -110,6 +110,7 @@ public class ObjectIdentityImpl implements ObjectIdentity {
 	 *
 	 * @return <code>true</code> if the presented object matches this object
 	 */
+	@Override
 	public boolean equals(Object arg0) {
 		if (arg0 == null || !(arg0 instanceof ObjectIdentityImpl)) {
 			return false;
@@ -134,10 +135,12 @@ public class ObjectIdentityImpl implements ObjectIdentity {
 		return type.equals(other.type);
 	}
 
+	@Override
 	public Serializable getIdentifier() {
 		return identifier;
 	}
 
+	@Override
 	public String getType() {
 		return type;
 	}
@@ -147,14 +150,14 @@ public class ObjectIdentityImpl implements ObjectIdentity {
 	 *
 	 * @return the hash
 	 */
+	@Override
 	public int hashCode() {
-		int code = 31;
-		code ^= this.type.hashCode();
-		code ^= this.identifier.hashCode();
-
-		return code;
+		int result = this.type.hashCode();
+		result = 31 * result + this.identifier.hashCode();
+		return result;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(this.getClass().getName()).append("[");

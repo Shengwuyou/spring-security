@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,7 +38,7 @@ public class MapBasedAttributes2GrantedAuthoritiesMapper implements
 	private String stringSeparator = ",";
 	private Set<String> mappableAttributes = null;
 
-	public void afterPropertiesSet() throws Exception {
+	public void afterPropertiesSet() {
 		Assert.notNull(attributes2grantedAuthoritiesMap,
 				"attributes2grantedAuthoritiesMap must be set");
 	}
@@ -47,7 +47,7 @@ public class MapBasedAttributes2GrantedAuthoritiesMapper implements
 	 * Map the given array of attributes to Spring Security GrantedAuthorities.
 	 */
 	public List<GrantedAuthority> getGrantedAuthorities(Collection<String> attributes) {
-		ArrayList<GrantedAuthority> gaList = new ArrayList<GrantedAuthority>();
+		ArrayList<GrantedAuthority> gaList = new ArrayList<>();
 		for (String attribute : attributes) {
 			Collection<GrantedAuthority> c = attributes2grantedAuthoritiesMap
 					.get(attribute);
@@ -88,7 +88,7 @@ public class MapBasedAttributes2GrantedAuthoritiesMapper implements
 	 * @return the processed Map
 	 */
 	private Map<String, Collection<GrantedAuthority>> preProcessMap(Map<?, ?> orgMap) {
-		Map<String, Collection<GrantedAuthority>> result = new HashMap<String, Collection<GrantedAuthority>>(
+		Map<String, Collection<GrantedAuthority>> result = new HashMap<>(
 				orgMap.size());
 
 		for (Map.Entry<?, ?> entry : orgMap.entrySet()) {
@@ -107,7 +107,7 @@ public class MapBasedAttributes2GrantedAuthoritiesMapper implements
 	 * @return Collection containing the GrantedAuthority Collection
 	 */
 	private Collection<GrantedAuthority> getGrantedAuthorityCollection(Object value) {
-		Collection<GrantedAuthority> result = new ArrayList<GrantedAuthority>();
+		Collection<GrantedAuthority> result = new ArrayList<>();
 		addGrantedAuthorityCollection(result, value);
 		return result;
 	}

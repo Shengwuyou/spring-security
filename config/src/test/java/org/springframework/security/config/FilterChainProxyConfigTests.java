@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,6 +38,7 @@ import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
+import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.AnyRequestMatcher;
@@ -80,6 +81,7 @@ public class FilterChainProxyConfigTests {
 	public void normalOperationWithNewConfig() throws Exception {
 		FilterChainProxy filterChainProxy = appCtx.getBean("newFilterChainProxy",
 				FilterChainProxy.class);
+		filterChainProxy.setFirewall(new DefaultHttpFirewall());
 		checkPathAndFilterOrder(filterChainProxy);
 		doNormalOperation(filterChainProxy);
 	}
@@ -88,6 +90,7 @@ public class FilterChainProxyConfigTests {
 	public void normalOperationWithNewConfigRegex() throws Exception {
 		FilterChainProxy filterChainProxy = appCtx.getBean("newFilterChainProxyRegex",
 				FilterChainProxy.class);
+		filterChainProxy.setFirewall(new DefaultHttpFirewall());
 		checkPathAndFilterOrder(filterChainProxy);
 		doNormalOperation(filterChainProxy);
 	}
@@ -96,20 +99,21 @@ public class FilterChainProxyConfigTests {
 	public void normalOperationWithNewConfigNonNamespace() throws Exception {
 		FilterChainProxy filterChainProxy = appCtx.getBean(
 				"newFilterChainProxyNonNamespace", FilterChainProxy.class);
+		filterChainProxy.setFirewall(new DefaultHttpFirewall());
 		checkPathAndFilterOrder(filterChainProxy);
 		doNormalOperation(filterChainProxy);
 	}
 
 	@Test
-	public void pathWithNoMatchHasNoFilters() throws Exception {
+	public void pathWithNoMatchHasNoFilters() {
 		FilterChainProxy filterChainProxy = appCtx.getBean(
 				"newFilterChainProxyNoDefaultPath", FilterChainProxy.class);
-		assertThat(filterChainProxy.getFilters("/nomatch")).isEqualTo(null);
+		assertThat(filterChainProxy.getFilters("/nomatch")).isNull();
 	}
 
 	// SEC-1235
 	@Test
-	public void mixingPatternsAndPlaceholdersDoesntCauseOrderingIssues() throws Exception {
+	public void mixingPatternsAndPlaceholdersDoesntCauseOrderingIssues() {
 		FilterChainProxy fcp = appCtx.getBean("sec1235FilterChainProxy",
 				FilterChainProxy.class);
 
@@ -124,8 +128,7 @@ public class FilterChainProxyConfigTests {
 				.getRequestMatcher()).getPattern();
 	}
 
-	private void checkPathAndFilterOrder(FilterChainProxy filterChainProxy)
-			throws Exception {
+	private void checkPathAndFilterOrder(FilterChainProxy filterChainProxy) {
 		List<Filter> filters = filterChainProxy.getFilters("/foo/blah;x=1");
 		assertThat(filters).hasSize(1);
 		assertThat(filters.get(0) instanceof SecurityContextHolderAwareRequestFilter).isTrue();
@@ -148,7 +151,7 @@ public class FilterChainProxyConfigTests {
 	}
 
 	private void doNormalOperation(FilterChainProxy filterChainProxy) throws Exception {
-		MockHttpServletRequest request = new MockHttpServletRequest();
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "");
 		request.setServletPath("/foo/secure/super/somefile.html");
 
 		MockHttpServletResponse response = new MockHttpServletResponse();

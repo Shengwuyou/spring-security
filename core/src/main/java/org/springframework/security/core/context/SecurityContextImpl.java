@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,9 +35,16 @@ public class SecurityContextImpl implements SecurityContext {
 
 	private Authentication authentication;
 
+	public SecurityContextImpl() {}
+
+	public SecurityContextImpl(Authentication authentication) {
+		this.authentication = authentication;
+	}
+
 	// ~ Methods
 	// ========================================================================================================
 
+	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof SecurityContextImpl) {
 			SecurityContextImpl test = (SecurityContextImpl) obj;
@@ -55,10 +62,12 @@ public class SecurityContextImpl implements SecurityContext {
 		return false;
 	}
 
+	@Override
 	public Authentication getAuthentication() {
 		return authentication;
 	}
 
+	@Override
 	public int hashCode() {
 		if (this.authentication == null) {
 			return -1;
@@ -68,10 +77,12 @@ public class SecurityContextImpl implements SecurityContext {
 		}
 	}
 
+	@Override
 	public void setAuthentication(Authentication authentication) {
 		this.authentication = authentication;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(super.toString());

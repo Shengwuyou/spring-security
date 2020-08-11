@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,7 +37,7 @@ import java.util.List;
 public class AclEntryAfterInvocationProviderTests {
 
 	@Test(expected = IllegalArgumentException.class)
-	public void rejectsMissingPermissions() throws Exception {
+	public void rejectsMissingPermissions() {
 		try {
 			new AclEntryAfterInvocationProvider(mock(AclService.class), null);
 			fail("Exception expected");
@@ -54,7 +54,7 @@ public class AclEntryAfterInvocationProviderTests {
 		Acl acl = mock(Acl.class);
 		when(acl.isGranted(any(List.class), any(List.class), anyBoolean())).thenReturn(
 				true);
-		when(service.readAclById(any(ObjectIdentity.class), any(List.class))).thenReturn(
+		when(service.readAclById(any(), any())).thenReturn(
 				acl);
 		AclEntryAfterInvocationProvider provider = new AclEntryAfterInvocationProvider(
 				service, Arrays.asList(mock(Permission.class)));
@@ -72,7 +72,7 @@ public class AclEntryAfterInvocationProviderTests {
 	}
 
 	@Test
-	public void accessIsGrantedIfNoAttributesDefined() throws Exception {
+	public void accessIsGrantedIfNoAttributesDefined() {
 		AclEntryAfterInvocationProvider provider = new AclEntryAfterInvocationProvider(
 				mock(AclService.class), Arrays.asList(mock(Permission.class)));
 		Object returned = new Object();
@@ -85,7 +85,7 @@ public class AclEntryAfterInvocationProviderTests {
 	}
 
 	@Test
-	public void accessIsGrantedIfObjectTypeNotSupported() throws Exception {
+	public void accessIsGrantedIfObjectTypeNotSupported() {
 		AclEntryAfterInvocationProvider provider = new AclEntryAfterInvocationProvider(
 				mock(AclService.class), Arrays.asList(mock(Permission.class)));
 		provider.setProcessDomainObjectClass(String.class);
@@ -106,9 +106,9 @@ public class AclEntryAfterInvocationProviderTests {
 		when(acl.isGranted(any(List.class), any(List.class), anyBoolean())).thenReturn(
 				false);
 		// Try a second time with no permissions found
-		when(acl.isGranted(any(List.class), any(List.class), anyBoolean())).thenThrow(
+		when(acl.isGranted(any(), any(List.class), anyBoolean())).thenThrow(
 				new NotFoundException(""));
-		when(service.readAclById(any(ObjectIdentity.class), any(List.class))).thenReturn(
+		when(service.readAclById(any(), any())).thenReturn(
 				acl);
 		AclEntryAfterInvocationProvider provider = new AclEntryAfterInvocationProvider(
 				service, Arrays.asList(mock(Permission.class)));
@@ -131,14 +131,14 @@ public class AclEntryAfterInvocationProviderTests {
 	}
 
 	@Test
-	public void nullReturnObjectIsIgnored() throws Exception {
+	public void nullReturnObjectIsIgnored() {
 		AclService service = mock(AclService.class);
 		AclEntryAfterInvocationProvider provider = new AclEntryAfterInvocationProvider(
 				service, Arrays.asList(mock(Permission.class)));
 
 		assertThat(provider.decide(mock(Authentication.class), new Object(),
 				SecurityConfig.createList("AFTER_ACL_COLLECTION_READ"), null))
-			.isNull();;
+			.isNull();
 		verify(service, never()).readAclById(any(ObjectIdentity.class), any(List.class));
 	}
 }

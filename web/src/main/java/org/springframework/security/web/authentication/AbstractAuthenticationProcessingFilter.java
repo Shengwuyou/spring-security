@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -156,6 +156,33 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 		this.requiresAuthenticationRequestMatcher = requiresAuthenticationRequestMatcher;
 	}
 
+	/**
+	 * Creates a new instance with a default filterProcessesUrl and an {@link AuthenticationManager}
+	 *
+	 * @param defaultFilterProcessesUrl the default value for <tt>filterProcessesUrl</tt>.
+	 * @param authenticationManager the {@link AuthenticationManager} used to authenticate an {@link Authentication} object.
+	 *                              Cannot be null.
+	 */
+	protected AbstractAuthenticationProcessingFilter(String defaultFilterProcessesUrl,
+			AuthenticationManager authenticationManager) {
+		setFilterProcessesUrl(defaultFilterProcessesUrl);
+		setAuthenticationManager(authenticationManager);
+	}
+
+	/**
+	 * Creates a new instance with a {@link RequestMatcher} and an {@link AuthenticationManager}
+	 *
+	 * @param requiresAuthenticationRequestMatcher the {@link RequestMatcher} used to determine
+	 *                                             if authentication is required. Cannot be null.
+	 * @param authenticationManager the {@link AuthenticationManager} used to authenticate an {@link Authentication} object.
+	 *                              Cannot be null.
+	 */
+	protected AbstractAuthenticationProcessingFilter(RequestMatcher requiresAuthenticationRequestMatcher,
+			AuthenticationManager authenticationManager) {
+		setRequiresAuthenticationRequestMatcher(requiresAuthenticationRequestMatcher);
+		setAuthenticationManager(authenticationManager);
+	}
+
 	// ~ Methods
 	// ========================================================================================================
 
@@ -245,7 +272,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 	 * current invocation.
 	 * <p>
 	 * It strips any parameters from the "path" section of the request URL (such as the
-	 * jsessionid parameter in <em>http://host/myapp/index.html;jsessionid=blah</em>)
+	 * jsessionid parameter in <em>https://host/myapp/index.html;jsessionid=blah</em>)
 	 * before matching against the <code>filterProcessesUrl</code> property.
 	 * <p>
 	 * Subclasses may override for special requirements, such as Tapestry integration.

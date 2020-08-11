@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ import org.junit.Test;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -55,7 +55,7 @@ public class CsrfTokenHandshakeInterceptorTests {
 	@Before
 	public void setup() {
 		httpRequest = new MockHttpServletRequest();
-		attributes = new HashMap<String, Object>();
+		attributes = new HashMap<>();
 		request = new ServletServerHttpRequest(httpRequest);
 
 		interceptor = new CsrfTokenHandshakeInterceptor();

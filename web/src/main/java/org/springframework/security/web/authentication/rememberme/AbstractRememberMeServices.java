@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,11 @@
  */
 package org.springframework.security.web.authentication.rememberme;
 
-import java.lang.reflect.Method;
+import java.io.UnsupportedEncodingException;
 import java.util.Base64;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -42,7 +45,6 @@ import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.util.Assert;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -50,7 +52,8 @@ import org.springframework.util.StringUtils;
  *
  * @author Luke Taylor
  * @author Rob Winch
- * @author Edd� Mel�ndez
+ * @author Eddú Meléndez
+ * @author Onur Kagan Ozcan
  * @since 2.0
  */
 public abstract class AbstractRememberMeServices implements RememberMeServices,
@@ -82,7 +85,6 @@ public abstract class AbstractRememberMeServices implements RememberMeServices,
 	private String key;
 	private int tokenValiditySeconds = TWO_WEEKS_S;
 	private Boolean useSecureCookie = null;
-	private Method setHttpOnlyMethod;
 	private GrantedAuthoritiesMapper authoritiesMapper = new NullAuthoritiesMapper();
 
 	protected AbstractRememberMeServices(String key, UserDetailsService userDetailsService) {
@@ -90,11 +92,10 @@ public abstract class AbstractRememberMeServices implements RememberMeServices,
 		Assert.notNull(userDetailsService, "UserDetailsService cannot be null");
 		this.key = key;
 		this.userDetailsService = userDetailsService;
-		this.setHttpOnlyMethod = ReflectionUtils.findMethod(Cookie.class, "setHttpOnly",
-				boolean.class);
 	}
 
-	public void afterPropertiesSet() throws Exception {
+	@Override
+	public void afterPropertiesSet() {
 		Assert.hasLength(key, "key cannot be empty or null");
 		Assert.notNull(userDetailsService, "A UserDetailsService is required");
 	}
@@ -107,6 +108,7 @@ public abstract class AbstractRememberMeServices implements RememberMeServices,
 	 * The returned username is then used to load the UserDetails object for the user,
 	 * which in turn is used to create a valid authentication token.
 	 */
+	@Override
 	public final Authentication autoLogin(HttpServletRequest request,
 			HttpServletResponse response) {
 		String rememberMeCookie = extractRememberMeCookie(request);
@@ -229,13 +231,16 @@ public abstract class AbstractRememberMeServices implements RememberMeServices,
 		String[] tokens = StringUtils.delimitedListToStringArray(cookieAsPlainText,
 				DELIMITER);
 
-		if ((tokens[0].equalsIgnoreCase("http") || tokens[0].equalsIgnoreCase("https"))
-				&& tokens[1].startsWith("//")) {
-			// Assume we've accidentally split a URL (OpenID identifier)
-			String[] newTokens = new String[tokens.length - 1];
-			newTokens[0] = tokens[0] + ":" + tokens[1];
-			System.arraycopy(tokens, 2, newTokens, 1, newTokens.length - 1);
-			tokens = newTokens;
+		for (int i = 0; i < tokens.length; i++)
+		{
+			try
+			{
+				tokens[i] = URLDecoder.decode(tokens[i], StandardCharsets.UTF_8.toString());
+			}
+			catch (UnsupportedEncodingException e)
+			{
+				logger.error(e.getMessage(), e);
+			}
 		}
 
 		return tokens;
@@ -250,7 +255,14 @@ public abstract class AbstractRememberMeServices implements RememberMeServices,
 	protected String encodeCookie(String[] cookieTokens) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < cookieTokens.length; i++) {
-			sb.append(cookieTokens[i]);
+			try
+			{
+				sb.append(URLEncoder.encode(cookieTokens[i], StandardCharsets.UTF_8.toString()));
+			}
+			catch (UnsupportedEncodingException e)
+			{
+				logger.error(e.getMessage(), e);
+			}
 
 			if (i < cookieTokens.length - 1) {
 				sb.append(DELIMITER);
@@ -268,6 +280,7 @@ public abstract class AbstractRememberMeServices implements RememberMeServices,
 		return sb.toString();
 	}
 
+	@Override
 	public final void loginFail(HttpServletRequest request, HttpServletResponse response) {
 		logger.debug("Interactive login attempt was unsuccessful.");
 		cancelCookie(request, response);
@@ -286,6 +299,7 @@ public abstract class AbstractRememberMeServices implements RememberMeServices,
 	 * true, calls <tt>onLoginSucces</tt>.
 	 * </p>
 	 */
+	@Override
 	public final void loginSuccess(HttpServletRequest request,
 			HttpServletResponse response, Authentication successfulAuthentication) {
 
@@ -370,6 +384,12 @@ public abstract class AbstractRememberMeServices implements RememberMeServices,
 		if (cookieDomain != null) {
 			cookie.setDomain(cookieDomain);
 		}
+		if (useSecureCookie == null) {
+			cookie.setSecure(request.isSecure());
+		}
+		else {
+			cookie.setSecure(useSecureCookie);
+		}
 		response.addCookie(cookie);
 	}
 
@@ -378,8 +398,8 @@ public abstract class AbstractRememberMeServices implements RememberMeServices,
 	 *
 	 * By default a secure cookie will be used if the connection is secure. You can set
 	 * the {@code useSecureCookie} property to {@code false} to override this. If you set
-	 * it to {@code true}, the cookie will always be flagged as secure. If Servlet 3.0 is
-	 * used, the cookie will be marked as HttpOnly.
+	 * it to {@code true}, the cookie will always be flagged as secure. By default the cookie
+	 * will be marked as HttpOnly.
 	 *
 	 * @param tokens the tokens which will be encoded to make the cookie value.
 	 * @param maxAge the value passed to {@link Cookie#setMaxAge(int)}
@@ -406,12 +426,7 @@ public abstract class AbstractRememberMeServices implements RememberMeServices,
 			cookie.setSecure(useSecureCookie);
 		}
 
-		if (setHttpOnlyMethod != null) {
-			ReflectionUtils.invokeMethod(setHttpOnlyMethod, cookie, Boolean.TRUE);
-		}
-		else if (logger.isDebugEnabled()) {
-			logger.debug("Note: Cookie will not be marked as HttpOnly because you are not using Servlet 3.0 (Cookie#setHttpOnly(boolean) was not found).");
-		}
+		cookie.setHttpOnly(true);
 
 		response.addCookie(cookie);
 	}
@@ -425,6 +440,7 @@ public abstract class AbstractRememberMeServices implements RememberMeServices,
 	 * Implementation of {@code LogoutHandler}. Default behaviour is to call
 	 * {@code cancelCookie()}.
 	 */
+	@Override
 	public void logout(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) {
 		if (logger.isDebugEnabled()) {

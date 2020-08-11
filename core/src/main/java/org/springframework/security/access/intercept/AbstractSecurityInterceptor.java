@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -125,7 +125,7 @@ public abstract class AbstractSecurityInterceptor implements InitializingBean,
 	// ~ Methods
 	// ========================================================================================================
 
-	public void afterPropertiesSet() throws Exception {
+	public void afterPropertiesSet() {
 		Assert.notNull(getSecureObjectClass(),
 				"Subclass must provide a non-null response to getSecureObjectClass()");
 		Assert.notNull(this.messages, "A message source must be set");
@@ -136,18 +136,18 @@ public abstract class AbstractSecurityInterceptor implements InitializingBean,
 				"An SecurityMetadataSource is required");
 		Assert.isTrue(this.obtainSecurityMetadataSource()
 				.supports(getSecureObjectClass()),
-				"SecurityMetadataSource does not support secure object class: "
+				() -> "SecurityMetadataSource does not support secure object class: "
 						+ getSecureObjectClass());
 		Assert.isTrue(this.runAsManager.supports(getSecureObjectClass()),
-				"RunAsManager does not support secure object class: "
+				() -> "RunAsManager does not support secure object class: "
 						+ getSecureObjectClass());
 		Assert.isTrue(this.accessDecisionManager.supports(getSecureObjectClass()),
-				"AccessDecisionManager does not support secure object class: "
+				() -> "AccessDecisionManager does not support secure object class: "
 						+ getSecureObjectClass());
 
 		if (this.afterInvocationManager != null) {
 			Assert.isTrue(this.afterInvocationManager.supports(getSecureObjectClass()),
-					"AfterInvocationManager does not support secure object class: "
+					() -> "AfterInvocationManager does not support secure object class: "
 							+ getSecureObjectClass());
 		}
 
@@ -161,7 +161,7 @@ public abstract class AbstractSecurityInterceptor implements InitializingBean,
 				return;
 			}
 
-			Set<ConfigAttribute> unsupportedAttrs = new HashSet<ConfigAttribute>();
+			Set<ConfigAttribute> unsupportedAttrs = new HashSet<>();
 
 			for (ConfigAttribute attr : attributeDefs) {
 				if (!this.runAsManager.supports(attr)

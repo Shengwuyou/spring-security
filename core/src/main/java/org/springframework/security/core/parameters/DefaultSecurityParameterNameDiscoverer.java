@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,6 @@ import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.core.PrioritizedParameterNameDiscoverer;
-import org.springframework.security.access.method.P;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
@@ -82,7 +81,8 @@ public class DefaultSecurityParameterNameDiscoverer extends
 			addDiscoverer(discover);
 		}
 
-		Set<String> annotationClassesToUse = new HashSet<String>(2);
+		Set<String> annotationClassesToUse = new HashSet<>(2);
+		annotationClassesToUse.add("org.springframework.security.access.method.P");
 		annotationClassesToUse.add(P.class.getName());
 		if (DATA_PARAM_PRESENT) {
 			annotationClassesToUse.add(DATA_PARAM_CLASSNAME);

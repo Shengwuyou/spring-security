@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,7 +52,7 @@ class ArrayFilterer<T> implements Filterer<T> {
 		// Collect the removed objects to a HashSet so that
 		// it is fast to lookup them when a filtered array
 		// is constructed.
-		removeList = new HashSet<T>();
+		removeList = new HashSet<>();
 	}
 
 	// ~ Methods

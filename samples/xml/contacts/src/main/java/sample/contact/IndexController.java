@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -84,21 +84,21 @@ public class IndexController {
 	@RequestMapping(value = "/secure/index.htm", method = RequestMethod.GET)
 	public ModelAndView displayUserContacts() {
 		List<Contact> myContactsList = contactManager.getAll();
-		Map<Contact, Boolean> hasDelete = new HashMap<Contact, Boolean>(
+		Map<Contact, Boolean> hasDelete = new HashMap<>(
 				myContactsList.size());
-		Map<Contact, Boolean> hasAdmin = new HashMap<Contact, Boolean>(
+		Map<Contact, Boolean> hasAdmin = new HashMap<>(
 				myContactsList.size());
 
 		Authentication user = SecurityContextHolder.getContext().getAuthentication();
 
 		for (Contact contact : myContactsList) {
-			hasDelete.put(contact, Boolean.valueOf(permissionEvaluator.hasPermission(
-					user, contact, HAS_DELETE)));
-			hasAdmin.put(contact, Boolean.valueOf(permissionEvaluator.hasPermission(user,
-					contact, HAS_ADMIN)));
+			hasDelete.put(contact, permissionEvaluator.hasPermission(
+					user, contact, HAS_DELETE));
+			hasAdmin.put(contact, permissionEvaluator.hasPermission(user,
+					contact, HAS_ADMIN));
 		}
 
-		Map<String, Object> model = new HashMap<String, Object>();
+		Map<String, Object> model = new HashMap<>();
 		model.put("contacts", myContactsList);
 		model.put("hasDeletePermission", hasDelete);
 		model.put("hasAdminPermission", hasAdmin);

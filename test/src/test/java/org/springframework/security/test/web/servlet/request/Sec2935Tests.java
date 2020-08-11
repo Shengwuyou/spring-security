@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -66,7 +66,7 @@ public class Sec2935Tests {
 	@Test
 	public void postProcessorUserNoUser() throws Exception {
 		mvc
-			.perform(get("/admin/abc").with(user("user").roles("ADMIN","USER")))
+			.perform(get("/admin/abc").with(user("user").roles("ADMIN", "USER")))
 			.andExpect(status().isNotFound())
 			.andExpect(authenticated().withUsername("user"));
 
@@ -79,7 +79,7 @@ public class Sec2935Tests {
 	@Test
 	public void postProcessorUserOtherUser() throws Exception {
 		mvc
-			.perform(get("/admin/abc").with(user("user1").roles("ADMIN","USER")))
+			.perform(get("/admin/abc").with(user("user1").roles("ADMIN", "USER")))
 			.andExpect(status().isNotFound())
 			.andExpect(authenticated().withUsername("user1"));
 
@@ -93,7 +93,7 @@ public class Sec2935Tests {
 	@Test
 	public void postProcessorUserWithMockUser() throws Exception {
 		mvc
-			.perform(get("/admin/abc").with(user("user1").roles("ADMIN","USER")))
+			.perform(get("/admin/abc").with(user("user1").roles("ADMIN", "USER")))
 			.andExpect(status().isNotFound())
 			.andExpect(authenticated().withUsername("user1"));
 
@@ -112,7 +112,7 @@ public class Sec2935Tests {
 				.build();
 
 		mvc
-			.perform(get("/admin/abc").with(user("user1").roles("ADMIN","USER")))
+			.perform(get("/admin/abc").with(user("user1").roles("ADMIN", "USER")))
 			.andExpect(status().isNotFound())
 			.andExpect(authenticated().withUsername("user1"));
 
@@ -132,7 +132,7 @@ public class Sec2935Tests {
 				.build();
 
 		mvc
-			.perform(get("/admin/abc").with(user("user1").roles("ADMIN","USER")))
+			.perform(get("/admin/abc").with(user("user1").roles("ADMIN", "USER")))
 			.andExpect(status().isNotFound())
 			.andExpect(authenticated().withUsername("user1"));
 

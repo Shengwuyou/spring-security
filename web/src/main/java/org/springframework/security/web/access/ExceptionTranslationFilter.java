@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,14 +21,16 @@ import org.springframework.security.authentication.AuthenticationTrustResolverIm
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.SpringSecurityMessageSource;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.ThrowableAnalyzer;
-import org.springframework.security.web.util.ThrowableCauseExtractor;
 import org.springframework.util.Assert;
 import org.springframework.web.filter.GenericFilterBean;
+
+import org.springframework.context.support.MessageSourceAccessor;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -83,6 +85,8 @@ public class ExceptionTranslationFilter extends GenericFilterBean {
 
 	private RequestCache requestCache = new HttpSessionRequestCache();
 
+	private final MessageSourceAccessor messages = SpringSecurityMessageSource.getAccessor();
+
 	public ExceptionTranslationFilter(AuthenticationEntryPoint authenticationEntryPoint) {
 		this(authenticationEntryPoint, new HttpSessionRequestCache());
 	}
@@ -130,6 +134,9 @@ public class ExceptionTranslationFilter extends GenericFilterBean {
 			}
 
 			if (ase != null) {
+				if (response.isCommitted()) {
+					throw new ServletException("Unable to handle the Spring Security Exception because the response is already committed.", ex);
+				}
 				handleSpringSecurityException(request, response, chain, ase);
 			}
 			else {
@@ -179,7 +186,9 @@ public class ExceptionTranslationFilter extends GenericFilterBean {
 						response,
 						chain,
 						new InsufficientAuthenticationException(
-								"Full authentication is required to access this resource"));
+							messages.getMessage(
+								"ExceptionTranslationFilter.insufficientAuthentication",
+								"Full authentication is required to access this resource")));
 			}
 			else {
 				logger.debug(
@@ -231,12 +240,10 @@ public class ExceptionTranslationFilter extends GenericFilterBean {
 		protected void initExtractorMap() {
 			super.initExtractorMap();
 
-			registerExtractor(ServletException.class, new ThrowableCauseExtractor() {
-				public Throwable extractCause(Throwable throwable) {
-					ThrowableAnalyzer.verifyThrowableHierarchy(throwable,
-							ServletException.class);
-					return ((ServletException) throwable).getRootCause();
-				}
+			registerExtractor(ServletException.class, throwable -> {
+				ThrowableAnalyzer.verifyThrowableHierarchy(throwable,
+						ServletException.class);
+				return ((ServletException) throwable).getRootCause();
 			});
 		}
 

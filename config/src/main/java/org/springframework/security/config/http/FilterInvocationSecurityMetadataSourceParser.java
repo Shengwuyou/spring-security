@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -155,7 +155,7 @@ public class FilterInvocationSecurityMetadataSourceParser implements BeanDefinit
 			MatcherType matcherType, List<Element> urlElts, boolean useExpressions,
 			boolean addAuthenticatedAll, ParserContext parserContext) {
 
-		ManagedMap<BeanMetadataElement, BeanDefinition> filterInvocationDefinitionMap = new ManagedMap<BeanMetadataElement, BeanDefinition>();
+		ManagedMap<BeanMetadataElement, BeanDefinition> filterInvocationDefinitionMap = new ManagedMap<>();
 
 		for (Element urlElt : urlElts) {
 			String access = urlElt.getAttribute(ATT_ACCESS);

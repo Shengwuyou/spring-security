@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,14 @@
 
 package org.springframework.security.web.csrf;
 
-import java.lang.reflect.Method;
 import java.util.UUID;
 
+import javax.servlet.ServletRequest;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.util.Assert;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.WebUtils;
 
@@ -49,17 +48,15 @@ public final class CookieCsrfTokenRepository implements CsrfTokenRepository {
 
 	private String cookieName = DEFAULT_CSRF_COOKIE_NAME;
 
-	private final Method setHttpOnlyMethod;
-
-	private boolean cookieHttpOnly;
+	private boolean cookieHttpOnly = true;
 
 	private String cookiePath;
 
+	private String cookieDomain;
+
+	private Boolean secure;
+
 	public CookieCsrfTokenRepository() {
-		this.setHttpOnlyMethod = ReflectionUtils.findMethod(Cookie.class, "setHttpOnly", boolean.class);
-		if (this.setHttpOnlyMethod != null) {
-			this.cookieHttpOnly = true;
-		}
 	}
 
 	@Override
@@ -73,7 +70,12 @@ public final class CookieCsrfTokenRepository implements CsrfTokenRepository {
 			HttpServletResponse response) {
 		String tokenValue = token == null ? "" : token.getToken();
 		Cookie cookie = new Cookie(this.cookieName, tokenValue);
-		cookie.setSecure(request.isSecure());
+		if (secure == null) {
+			cookie.setSecure(request.isSecure());
+		} else {
+			cookie.setSecure(secure);
+		}
+
 		if (this.cookiePath != null && !this.cookiePath.isEmpty()) {
 				cookie.setPath(this.cookiePath);
 		} else {
@@ -85,8 +87,9 @@ public final class CookieCsrfTokenRepository implements CsrfTokenRepository {
 		else {
 			cookie.setMaxAge(-1);
 		}
-		if (cookieHttpOnly && setHttpOnlyMethod != null) {
-			ReflectionUtils.invokeMethod(setHttpOnlyMethod, cookie, Boolean.TRUE);
+		cookie.setHttpOnly(cookieHttpOnly);
+		if (this.cookieDomain != null && !this.cookieDomain.isEmpty()) {
+			cookie.setDomain(this.cookieDomain);
 		}
 
 		response.addCookie(cookie);
@@ -140,17 +143,11 @@ public final class CookieCsrfTokenRepository implements CsrfTokenRepository {
 
 	/**
 	 * Sets the HttpOnly attribute on the cookie containing the CSRF token.
-	 * The cookie will only be marked as HttpOnly if both <code>cookieHttpOnly</code> is <code>true</code> and the underlying version of Servlet is 3.0 or greater.
-	 * Defaults to <code>true</code> if the underlying version of Servlet is 3.0 or greater.
-	 * NOTE: The {@link Cookie#setHttpOnly(boolean)} was introduced in Servlet 3.0.
+	 * Defaults to <code>true</code>.
 	 *
-	 * @param cookieHttpOnly <code>true</code> sets the HttpOnly attribute, <code>false</code> does not set it (depending on Servlet version)
-	 * @throws IllegalArgumentException if <code>cookieHttpOnly</code> is <code>true</code> and the underlying version of Servlet is less than 3.0
+	 * @param cookieHttpOnly <code>true</code> sets the HttpOnly attribute, <code>false</code> does not set it
 	 */
 	public void setCookieHttpOnly(boolean cookieHttpOnly) {
-		if (cookieHttpOnly && setHttpOnlyMethod == null) {
-			throw new IllegalArgumentException("Cookie will not be marked as HttpOnly because you are using a version of Servlet less than 3.0. NOTE: The Cookie#setHttpOnly(boolean) was introduced in Servlet 3.0.");
-		}
 		this.cookieHttpOnly = cookieHttpOnly;
 	}
 
@@ -194,4 +191,29 @@ public final class CookieCsrfTokenRepository implements CsrfTokenRepository {
 	public String getCookiePath() {
 		return this.cookiePath;
 	}
+
+	/**
+	 * Sets the domain of the cookie that the expected CSRF token is saved to and read from.
+	 *
+	 * @since 5.2
+	 * @param cookieDomain the domain of the cookie that the expected CSRF token is saved to
+	 * and read from
+	 */
+	public void setCookieDomain(String cookieDomain) {
+		this.cookieDomain = cookieDomain;
+	}
+
+	/**
+	 * Sets secure flag of the cookie that the expected CSRF token is saved to and read from.
+	 * By default secure flag depends on {@link ServletRequest#isSecure()}
+	 *
+	 * @since 5.4
+	 * @param secure the secure flag of the cookie that the expected CSRF token is saved to
+	 * and read from
+	 */
+	public void setSecure(Boolean secure) {
+		this.secure = secure;
+	}
+
+
 }

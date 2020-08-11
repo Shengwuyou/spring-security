@@ -1,11 +1,11 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,9 @@
 
 package org.springframework.security.jackson2;
 
+import java.io.IOException;
+import java.util.List;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -24,12 +27,9 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.MissingNode;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-
-import java.io.IOException;
-import java.util.List;
 
 /**
  * Custom deserializer for {@link UsernamePasswordAuthenticationToken}. At the time of deserialization
@@ -40,6 +40,8 @@ import java.util.List;
  * you can also registered it with your own mixin class.
  *
  * @author Jitendra Singh
+ * @author Greg Turnquist
+ * @author Onur Kagan Ozcan
  * @see UsernamePasswordAuthenticationTokenMixin
  * @since 4.2
  */
@@ -61,21 +63,33 @@ class UsernamePasswordAuthenticationTokenDeserializer extends JsonDeserializer<U
 		Boolean authenticated = readJsonNode(jsonNode, "authenticated").asBoolean();
 		JsonNode principalNode = readJsonNode(jsonNode, "principal");
 		Object principal = null;
-		if(principalNode.isObject()) {
-			principal = mapper.readValue(principalNode.toString(), new TypeReference<User>() {});
+		if (principalNode.isObject()) {
+			principal = mapper.readValue(principalNode.traverse(mapper), Object.class);
 		} else {
 			principal = principalNode.asText();
 		}
-		Object credentials = readJsonNode(jsonNode, "credentials").asText();
+		JsonNode credentialsNode = readJsonNode(jsonNode, "credentials");
+		Object credentials;
+		if (credentialsNode.isNull() || credentialsNode.isMissingNode()) {
+			credentials = null;
+		} else {
+			credentials = credentialsNode.asText();
+		}
 		List<GrantedAuthority> authorities = mapper.readValue(
-				readJsonNode(jsonNode, "authorities").toString(), new TypeReference<List<GrantedAuthority>>() {
+				readJsonNode(jsonNode, "authorities").traverse(mapper), new TypeReference<List<GrantedAuthority>>() {
 		});
 		if (authenticated) {
 			token = new UsernamePasswordAuthenticationToken(principal, credentials, authorities);
 		} else {
 			token = new UsernamePasswordAuthenticationToken(principal, credentials);
 		}
-		token.setDetails(readJsonNode(jsonNode, "details"));
+		JsonNode detailsNode = readJsonNode(jsonNode, "details");
+		if (detailsNode.isNull() || detailsNode.isMissingNode()) {
+			token.setDetails(null);
+		} else {
+			Object details = mapper.readValue(detailsNode.toString(), new TypeReference<Object>() {});
+			token.setDetails(details);
+		}
 		return token;
 	}
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@ package org.springframework.security.acls.domain;
 
 import org.springframework.security.acls.model.Sid;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import org.springframework.util.Assert;
 
@@ -49,17 +48,13 @@ public class PrincipalSid implements Sid {
 		Assert.notNull(authentication, "Authentication required");
 		Assert.notNull(authentication.getPrincipal(), "Principal required");
 
-		if (authentication.getPrincipal() instanceof UserDetails) {
-			this.principal = ((UserDetails) authentication.getPrincipal()).getUsername();
-		}
-		else {
-			this.principal = authentication.getPrincipal().toString();
-		}
+		this.principal = authentication.getName();
 	}
 
 	// ~ Methods
 	// ========================================================================================================
 
+	@Override
 	public boolean equals(Object object) {
 		if ((object == null) || !(object instanceof PrincipalSid)) {
 			return false;
@@ -70,6 +65,7 @@ public class PrincipalSid implements Sid {
 		return ((PrincipalSid) object).getPrincipal().equals(this.getPrincipal());
 	}
 
+	@Override
 	public int hashCode() {
 		return this.getPrincipal().hashCode();
 	}
@@ -78,6 +74,7 @@ public class PrincipalSid implements Sid {
 		return principal;
 	}
 
+	@Override
 	public String toString() {
 		return "PrincipalSid[" + this.principal + "]";
 	}

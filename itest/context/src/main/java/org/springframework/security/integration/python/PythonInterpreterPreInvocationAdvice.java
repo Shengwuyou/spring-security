@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -62,7 +62,7 @@ public class PythonInterpreterPreInvocationAdvice implements
 			throw new IllegalStateException("Python script did not set the permit flag");
 		}
 
-		return (Boolean) Py.tojava(allowed, Boolean.class);
+		return Py.tojava(allowed, Boolean.class);
 	}
 
 	private Map<String, Object> createArgumentMap(MethodInvocation mi) {
@@ -72,7 +72,7 @@ public class PythonInterpreterPreInvocationAdvice implements
 				targetObject.getClass());
 		String[] paramNames = parameterNameDiscoverer.getParameterNames(method);
 
-		Map<String, Object> argMap = new HashMap<String, Object>();
+		Map<String, Object> argMap = new HashMap<>();
 		for (int i = 0; i < args.length; i++) {
 			argMap.put(paramNames[i], args[i]);
 		}

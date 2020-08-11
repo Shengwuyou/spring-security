@@ -1,11 +1,11 @@
 /*
- * Copyright 2004, 2005, 2006 Acegi Technology Pty Limited
+ * Copyright 2004, 2005, 2006, 2017 Acegi Technology Pty Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -78,11 +78,11 @@ public class JdbcMutableAclServiceTests extends
 	// ================================================================================================
 
 	private final ObjectIdentity topParentOid = new ObjectIdentityImpl(TARGET_CLASS,
-			Long.valueOf(100));
+			100L);
 	private final ObjectIdentity middleParentOid = new ObjectIdentityImpl(TARGET_CLASS,
-			Long.valueOf(101));
+			101L);
 	private final ObjectIdentity childOid = new ObjectIdentityImpl(TARGET_CLASS,
-			Long.valueOf(102));
+			102L);
 
 	@Autowired
 	private JdbcMutableAclService jdbcMutableAclService;
@@ -98,10 +98,30 @@ public class JdbcMutableAclServiceTests extends
 	// ~ Methods
 	// ========================================================================================================
 
+	protected String getSqlClassPathResource() {
+		return "createAclSchema.sql";
+	}
+
+	protected ObjectIdentity getTopParentOid() {
+		return topParentOid;
+	}
+
+	protected ObjectIdentity getMiddleParentOid() {
+		return middleParentOid;
+	}
+
+	protected ObjectIdentity getChildOid() {
+		return childOid;
+	}
+
+	protected String getTargetClass() {
+		return TARGET_CLASS;
+	}
+
 	@BeforeTransaction
 	public void createTables() throws Exception {
 		try {
-			new DatabaseSeeder(dataSource, new ClassPathResource("createAclSchema.sql"));
+			new DatabaseSeeder(dataSource, new ClassPathResource(getSqlClassPathResource()));
 			// new DatabaseSeeder(dataSource, new
 			// ClassPathResource("createAclSchemaPostgres.sql"));
 		}
@@ -112,7 +132,7 @@ public class JdbcMutableAclServiceTests extends
 	}
 
 	@AfterTransaction
-	public void clearContextAndData() throws Exception {
+	public void clearContextAndData() {
 		SecurityContextHolder.clearContext();
 		jdbcTemplate.execute("drop table acl_entry");
 		jdbcTemplate.execute("drop table acl_object_identity");
@@ -126,9 +146,9 @@ public class JdbcMutableAclServiceTests extends
 	public void testLifecycle() {
 		SecurityContextHolder.getContext().setAuthentication(auth);
 
-		MutableAcl topParent = jdbcMutableAclService.createAcl(topParentOid);
-		MutableAcl middleParent = jdbcMutableAclService.createAcl(middleParentOid);
-		MutableAcl child = jdbcMutableAclService.createAcl(childOid);
+		MutableAcl topParent = jdbcMutableAclService.createAcl(getTopParentOid());
+		MutableAcl middleParent = jdbcMutableAclService.createAcl(getMiddleParentOid());
+		MutableAcl child = jdbcMutableAclService.createAcl(getChildOid());
 
 		// Specify the inheritance hierarchy
 		middleParent.setParent(topParent);
@@ -147,13 +167,13 @@ public class JdbcMutableAclServiceTests extends
 
 		// Let's check if we can read them back correctly
 		Map<ObjectIdentity, Acl> map = jdbcMutableAclService.readAclsById(Arrays.asList(
-				topParentOid, middleParentOid, childOid));
+			getTopParentOid(), getMiddleParentOid(), getChildOid()));
 		assertThat(map).hasSize(3);
 
 		// Replace our current objects with their retrieved versions
-		topParent = (MutableAcl) map.get(topParentOid);
-		middleParent = (MutableAcl) map.get(middleParentOid);
-		child = (MutableAcl) map.get(childOid);
+		topParent = (MutableAcl) map.get(getTopParentOid());
+		middleParent = (MutableAcl) map.get(getMiddleParentOid());
+		child = (MutableAcl) map.get(getChildOid());
 
 		// Check the retrieved versions has IDs
 		assertThat(topParent.getId()).isNotNull();
@@ -162,8 +182,8 @@ public class JdbcMutableAclServiceTests extends
 
 		// Check their parents were correctly persisted
 		assertThat(topParent.getParentAcl()).isNull();
-		assertThat(middleParent.getParentAcl().getObjectIdentity()).isEqualTo(topParentOid);
-		assertThat(child.getParentAcl().getObjectIdentity()).isEqualTo(middleParentOid);
+		assertThat(middleParent.getParentAcl().getObjectIdentity()).isEqualTo(getTopParentOid());
+		assertThat(child.getParentAcl().getObjectIdentity()).isEqualTo(getMiddleParentOid());
 
 		// Check their ACEs were correctly persisted
 		assertThat(topParent.getEntries()).hasSize(2);
@@ -197,7 +217,7 @@ public class JdbcMutableAclServiceTests extends
 		// Next change the child so it doesn't inherit permissions from above
 		child.setEntriesInheriting(false);
 		jdbcMutableAclService.updateAcl(child);
-		child = (MutableAcl) jdbcMutableAclService.readAclById(childOid);
+		child = (MutableAcl) jdbcMutableAclService.readAclById(getChildOid());
 		assertThat(child.isEntriesInheriting()).isFalse();
 
 		// Check the child permissions no longer inherit
@@ -228,7 +248,7 @@ public class JdbcMutableAclServiceTests extends
 
 		// Save the changed child
 		jdbcMutableAclService.updateAcl(child);
-		child = (MutableAcl) jdbcMutableAclService.readAclById(childOid);
+		child = (MutableAcl) jdbcMutableAclService.readAclById(getChildOid());
 		assertThat(child.getEntries()).hasSize(3);
 
 		// Output permissions
@@ -265,45 +285,45 @@ public class JdbcMutableAclServiceTests extends
 	 */
 	@Test
 	@Transactional
-	public void deleteAclAlsoDeletesChildren() throws Exception {
+	public void deleteAclAlsoDeletesChildren() {
 		SecurityContextHolder.getContext().setAuthentication(auth);
 
-		jdbcMutableAclService.createAcl(topParentOid);
-		MutableAcl middleParent = jdbcMutableAclService.createAcl(middleParentOid);
-		MutableAcl child = jdbcMutableAclService.createAcl(childOid);
+		jdbcMutableAclService.createAcl(getTopParentOid());
+		MutableAcl middleParent = jdbcMutableAclService.createAcl(getMiddleParentOid());
+		MutableAcl child = jdbcMutableAclService.createAcl(getChildOid());
 		child.setParent(middleParent);
 		jdbcMutableAclService.updateAcl(middleParent);
 		jdbcMutableAclService.updateAcl(child);
 		// Check the childOid really is a child of middleParentOid
-		Acl childAcl = jdbcMutableAclService.readAclById(childOid);
+		Acl childAcl = jdbcMutableAclService.readAclById(getChildOid());
 
-		assertThat(childAcl.getParentAcl().getObjectIdentity()).isEqualTo(middleParentOid);
+		assertThat(childAcl.getParentAcl().getObjectIdentity()).isEqualTo(getMiddleParentOid());
 
 		// Delete the mid-parent and test if the child was deleted, as well
-		jdbcMutableAclService.deleteAcl(middleParentOid, true);
+		jdbcMutableAclService.deleteAcl(getMiddleParentOid(), true);
 
 		try {
-			jdbcMutableAclService.readAclById(middleParentOid);
+			jdbcMutableAclService.readAclById(getMiddleParentOid());
 			fail("It should have thrown NotFoundException");
 		}
 		catch (NotFoundException expected) {
 
 		}
 		try {
-			jdbcMutableAclService.readAclById(childOid);
+			jdbcMutableAclService.readAclById(getChildOid());
 			fail("It should have thrown NotFoundException");
 		}
 		catch (NotFoundException expected) {
 
 		}
 
-		Acl acl = jdbcMutableAclService.readAclById(topParentOid);
+		Acl acl = jdbcMutableAclService.readAclById(getTopParentOid());
 		assertThat(acl).isNotNull();
-		assertThat(topParentOid).isEqualTo(((MutableAcl) acl).getObjectIdentity());
+		assertThat(getTopParentOid()).isEqualTo(acl.getObjectIdentity());
 	}
 
 	@Test
-	public void constructorRejectsNullParameters() throws Exception {
+	public void constructorRejectsNullParameters() {
 		try {
 			new JdbcMutableAclService(null, lookupStrategy, aclCache);
 			fail("It should have thrown IllegalArgumentException");
@@ -327,7 +347,7 @@ public class JdbcMutableAclServiceTests extends
 	}
 
 	@Test
-	public void createAclRejectsNullParameter() throws Exception {
+	public void createAclRejectsNullParameter() {
 		try {
 			jdbcMutableAclService.createAcl(null);
 			fail("It should have thrown IllegalArgumentException");
@@ -338,10 +358,10 @@ public class JdbcMutableAclServiceTests extends
 
 	@Test
 	@Transactional
-	public void createAclForADuplicateDomainObject() throws Exception {
+	public void createAclForADuplicateDomainObject() {
 		SecurityContextHolder.getContext().setAuthentication(auth);
 		ObjectIdentity duplicateOid = new ObjectIdentityImpl(TARGET_CLASS,
-				Long.valueOf(100));
+				100L);
 		jdbcMutableAclService.createAcl(duplicateOid);
 		// Try to add the same object second time
 		try {
@@ -354,7 +374,7 @@ public class JdbcMutableAclServiceTests extends
 
 	@Test
 	@Transactional
-	public void deleteAclRejectsNullParameters() throws Exception {
+	public void deleteAclRejectsNullParameters() {
 		try {
 			jdbcMutableAclService.deleteAcl(null, true);
 			fail("It should have thrown IllegalArgumentException");
@@ -365,10 +385,10 @@ public class JdbcMutableAclServiceTests extends
 
 	@Test
 	@Transactional
-	public void deleteAclWithChildrenThrowsException() throws Exception {
+	public void deleteAclWithChildrenThrowsException() {
 		SecurityContextHolder.getContext().setAuthentication(auth);
-		MutableAcl parent = jdbcMutableAclService.createAcl(topParentOid);
-		MutableAcl child = jdbcMutableAclService.createAcl(middleParentOid);
+		MutableAcl parent = jdbcMutableAclService.createAcl(getTopParentOid());
+		MutableAcl child = jdbcMutableAclService.createAcl(getMiddleParentOid());
 
 		// Specify the inheritance hierarchy
 		child.setParent(parent);
@@ -378,7 +398,7 @@ public class JdbcMutableAclServiceTests extends
 			jdbcMutableAclService.setForeignKeysInDatabase(false); // switch on FK
 																	// checking in the
 																	// class, not database
-			jdbcMutableAclService.deleteAcl(topParentOid, false);
+			jdbcMutableAclService.deleteAcl(getTopParentOid(), false);
 			fail("It should have thrown ChildrenExistException");
 		}
 		catch (ChildrenExistException expected) {
@@ -391,36 +411,36 @@ public class JdbcMutableAclServiceTests extends
 
 	@Test
 	@Transactional
-	public void deleteAclRemovesRowsFromDatabase() throws Exception {
+	public void deleteAclRemovesRowsFromDatabase() {
 		SecurityContextHolder.getContext().setAuthentication(auth);
-		MutableAcl child = jdbcMutableAclService.createAcl(childOid);
+		MutableAcl child = jdbcMutableAclService.createAcl(getChildOid());
 		child.insertAce(0, BasePermission.DELETE, new PrincipalSid(auth), false);
 		jdbcMutableAclService.updateAcl(child);
 
 		// Remove the child and check all related database rows were removed accordingly
-		jdbcMutableAclService.deleteAcl(childOid, false);
+		jdbcMutableAclService.deleteAcl(getChildOid(), false);
 		assertThat(
 				jdbcTemplate.queryForList(SELECT_ALL_CLASSES,
-						new Object[] { TARGET_CLASS })).hasSize(1);
+						new Object[] { getTargetClass() })).hasSize(1);
 		assertThat(jdbcTemplate.queryForList("select * from acl_object_identity")
 				).isEmpty();
 		assertThat(jdbcTemplate.queryForList("select * from acl_entry")).isEmpty();
 
 		// Check the cache
-		assertThat(aclCache.getFromCache(childOid)).isNull();
-		assertThat(aclCache.getFromCache(Long.valueOf(102))).isNull();
+		assertThat(aclCache.getFromCache(getChildOid())).isNull();
+		assertThat(aclCache.getFromCache(102L)).isNull();
 	}
 
 	/** SEC-1107 */
 	@Test
 	@Transactional
-	public void identityWithIntegerIdIsSupportedByCreateAcl() throws Exception {
+	public void identityWithIntegerIdIsSupportedByCreateAcl() {
 		SecurityContextHolder.getContext().setAuthentication(auth);
-		ObjectIdentity oid = new ObjectIdentityImpl(TARGET_CLASS, Integer.valueOf(101));
+		ObjectIdentity oid = new ObjectIdentityImpl(TARGET_CLASS, 101);
 		jdbcMutableAclService.createAcl(oid);
 
 		assertThat(jdbcMutableAclService.readAclById(new ObjectIdentityImpl(
-				TARGET_CLASS, Long.valueOf(101)))).isNotNull();
+				TARGET_CLASS, 101L))).isNotNull();
 	}
 
 	/**
@@ -428,14 +448,14 @@ public class JdbcMutableAclServiceTests extends
 	 */
 	@Test
 	@Transactional
-	public void childrenAreClearedFromCacheWhenParentIsUpdated() throws Exception {
+	public void childrenAreClearedFromCacheWhenParentIsUpdated() {
 		Authentication auth = new TestingAuthenticationToken("ben", "ignored",
 				"ROLE_ADMINISTRATOR");
 		auth.setAuthenticated(true);
 		SecurityContextHolder.getContext().setAuthentication(auth);
 
-		ObjectIdentity parentOid = new ObjectIdentityImpl(TARGET_CLASS, Long.valueOf(104));
-		ObjectIdentity childOid = new ObjectIdentityImpl(TARGET_CLASS, Long.valueOf(105));
+		ObjectIdentity parentOid = new ObjectIdentityImpl(TARGET_CLASS, 104L);
+		ObjectIdentity childOid = new ObjectIdentityImpl(TARGET_CLASS, 105L);
 
 		MutableAcl parent = jdbcMutableAclService.createAcl(parentOid);
 		MutableAcl child = jdbcMutableAclService.createAcl(childOid);
@@ -466,16 +486,16 @@ public class JdbcMutableAclServiceTests extends
 	 */
 	@Test
 	@Transactional
-	public void childrenAreClearedFromCacheWhenParentisUpdated2() throws Exception {
+	public void childrenAreClearedFromCacheWhenParentisUpdated2() {
 		Authentication auth = new TestingAuthenticationToken("system", "secret",
 				"ROLE_IGNORED");
 		SecurityContextHolder.getContext().setAuthentication(auth);
 		ObjectIdentityImpl rootObject = new ObjectIdentityImpl(TARGET_CLASS,
-				Long.valueOf(1));
+				1L);
 
 		MutableAcl parent = jdbcMutableAclService.createAcl(rootObject);
 		MutableAcl child = jdbcMutableAclService.createAcl(new ObjectIdentityImpl(
-				TARGET_CLASS, Long.valueOf(2)));
+				TARGET_CLASS, 2L));
 		child.setParent(parent);
 		jdbcMutableAclService.updateAcl(child);
 
@@ -487,7 +507,7 @@ public class JdbcMutableAclServiceTests extends
 		jdbcMutableAclService.updateAcl(parent);
 
 		child = (MutableAcl) jdbcMutableAclService.readAclById(new ObjectIdentityImpl(
-				TARGET_CLASS, Long.valueOf(2)));
+				TARGET_CLASS, 2L));
 
 		parent = (MutableAcl) child.getParentAcl();
 
@@ -508,7 +528,7 @@ public class JdbcMutableAclServiceTests extends
 		SecurityContextHolder.getContext().setAuthentication(auth);
 
 		ObjectIdentity topParentOid = new ObjectIdentityImpl(TARGET_CLASS,
-				Long.valueOf(110));
+				110L);
 		MutableAcl topParent = jdbcMutableAclService.createAcl(topParentOid);
 
 		// Add an ACE permission entry
@@ -573,4 +593,11 @@ public class JdbcMutableAclServiceTests extends
 		}
 	}
 
+	protected Authentication getAuth() {
+		return auth;
+	}
+
+	protected JdbcMutableAclService getJdbcMutableAclService() {
+		return jdbcMutableAclService;
+	}
 }

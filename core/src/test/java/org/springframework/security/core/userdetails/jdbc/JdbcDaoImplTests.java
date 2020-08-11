@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.security.core.userdetails.jdbc;
-
-import java.util.Locale;
 
 import org.junit.Test;
 
@@ -28,8 +26,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -44,7 +42,7 @@ public class JdbcDaoImplTests {
 	// ~ Methods
 	// ========================================================================================================
 
-	private JdbcDaoImpl makePopulatedJdbcDao() throws Exception {
+	private JdbcDaoImpl makePopulatedJdbcDao() {
 		JdbcDaoImpl dao = new JdbcDaoImpl();
 		dao.setDataSource(PopulatedDatabase.getDataSource());
 		dao.afterPropertiesSet();
@@ -52,7 +50,7 @@ public class JdbcDaoImplTests {
 		return dao;
 	}
 
-	private JdbcDaoImpl makePopulatedJdbcDaoWithRolePrefix() throws Exception {
+	private JdbcDaoImpl makePopulatedJdbcDaoWithRolePrefix() {
 		JdbcDaoImpl dao = new JdbcDaoImpl();
 		dao.setDataSource(PopulatedDatabase.getDataSource());
 		dao.setRolePrefix("ARBITRARY_PREFIX_");
@@ -170,7 +168,7 @@ public class JdbcDaoImplTests {
 	}
 
 	@Test
-	public void testStartupFailsIfDataSourceNotSet() throws Exception {
+	public void testStartupFailsIfDataSourceNotSet() {
 		JdbcDaoImpl dao = new JdbcDaoImpl();
 
 		try {
@@ -183,7 +181,7 @@ public class JdbcDaoImplTests {
 	}
 
 	@Test
-	public void testStartupFailsIfUserMapSetToNull() throws Exception {
+	public void testStartupFailsIfUserMapSetToNull() {
 		JdbcDaoImpl dao = new JdbcDaoImpl();
 
 		try {
@@ -197,14 +195,14 @@ public class JdbcDaoImplTests {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void setMessageSourceWhenNullThenThrowsException() throws Exception {
+	public void setMessageSourceWhenNullThenThrowsException() {
 		JdbcDaoImpl dao = new JdbcDaoImpl();
 
 		dao.setMessageSource(null);
 	}
 
 	@Test
-	public void setMessageSourceWhenNotNullThenCanGet() throws Exception {
+	public void setMessageSourceWhenNotNullThenCanGet() {
 		MessageSource source = mock(MessageSource.class);
 		JdbcDaoImpl dao = new JdbcDaoImpl();
 		dao.setMessageSource(source);
@@ -212,6 +210,6 @@ public class JdbcDaoImplTests {
 
 		dao.getMessages().getMessage(code);
 
-		verify(source).getMessage(eq(code), any(Object[].class), any(Locale.class));
+		verify(source).getMessage(eq(code), any(), any());
 	}
 }

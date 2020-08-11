@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,6 +26,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.CredentialsContainer;
 import org.springframework.security.core.AuthenticatedPrincipal;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.userdetails.UserDetails;
 
 /**
  * Base class for <code>Authentication</code> objects.
@@ -65,7 +66,7 @@ public abstract class AbstractAuthenticationToken implements Authentication,
 						"Authorities collection cannot contain any null elements");
 			}
 		}
-		ArrayList<GrantedAuthority> temp = new ArrayList<GrantedAuthority>(
+		ArrayList<GrantedAuthority> temp = new ArrayList<>(
 				authorities.size());
 		temp.addAll(authorities);
 		this.authorities = Collections.unmodifiableList(temp);
@@ -79,12 +80,14 @@ public abstract class AbstractAuthenticationToken implements Authentication,
 	}
 
 	public String getName() {
+		if (this.getPrincipal() instanceof UserDetails) {
+			return ((UserDetails) this.getPrincipal()).getUsername();
+		}
 		if (this.getPrincipal() instanceof AuthenticatedPrincipal) {
 			return ((AuthenticatedPrincipal) this.getPrincipal()).getName();
 		}
-
-		if (getPrincipal() instanceof Principal) {
-			return ((Principal) getPrincipal()).getName();
+		if (this.getPrincipal() instanceof Principal) {
+			return ((Principal) this.getPrincipal()).getName();
 		}
 
 		return (this.getPrincipal() == null) ? "" : this.getPrincipal().toString();

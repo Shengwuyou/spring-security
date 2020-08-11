@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -60,10 +60,29 @@ public final class Header {
 		return this.headerValues;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+
+		Header header = (Header) o;
+
+		if (!this.headerName.equals(header.headerName)) {
+			return false;
+		}
+		return this.headerValues.equals(header.headerValues);
+	}
+
+	@Override
 	public int hashCode() {
 		return headerName.hashCode() + headerValues.hashCode();
 	}
 
+	@Override
 	public String toString() {
 		return "Header [name: " + headerName + ", values: " + headerValues + "]";
 	}

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -57,7 +57,7 @@ public class EncodingUtilsTests {
 			(byte) 67, (byte) 0xC0, (byte) 0xC1, (byte) 0xC2 };
 		byte[] two = new byte[] { (byte) 0xFF, (byte) 65, (byte) 66 };
 		byte[] subArray = EncodingUtils.subArray(bytes, 1, 4);
-		assertThat(subArray.length).isEqualTo(3);
+		assertThat(subArray).hasSize(3);
 		assertThat(Arrays.equals(two, subArray)).isTrue();
 	}
 

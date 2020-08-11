@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,12 +15,10 @@
  */
 package org.springframework.security.config.http;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
 
 import org.w3c.dom.Element;
 
@@ -73,7 +71,6 @@ import org.springframework.security.web.session.SimpleRedirectInvalidSessionStra
 import org.springframework.security.web.session.SimpleRedirectSessionInformationExpiredStrategy;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 
@@ -155,7 +152,7 @@ class HttpConfigurationBuilder {
 	private BeanDefinition invalidSession;
 	private boolean addAllAuth;
 
-	public HttpConfigurationBuilder(Element element, boolean addAllAuth,
+	HttpConfigurationBuilder(Element element, boolean addAllAuth,
 			ParserContext pc, BeanReference portMapper, BeanReference portResolver,
 			BeanReference authenticationManager) {
 		this.httpElt = element;
@@ -241,6 +238,12 @@ class HttpConfigurationBuilder {
 		}
 	}
 
+	void setCsrfIgnoreRequestMatchers(List<BeanDefinition> requestMatchers) {
+		if (csrfParser != null) {
+			csrfParser.setIgnoreCsrfRequestMatchers(requestMatchers);
+		}
+	}
+
 	// Needed to account for placeholders
 	static String createPath(String path, boolean lowerCase) {
 		return lowerCase ? path.toLowerCase() : path;
@@ -252,7 +255,7 @@ class HttpConfigurationBuilder {
 
 		String repoRef = httpElt.getAttribute(ATT_SECURITY_CONTEXT_REPOSITORY);
 		String disableUrlRewriting = httpElt.getAttribute(ATT_DISABLE_URL_REWRITING);
-		if(!StringUtils.hasText(disableUrlRewriting)) {
+		if (!StringUtils.hasText(disableUrlRewriting)) {
 			disableUrlRewriting = "true";
 		}
 
@@ -350,10 +353,7 @@ class HttpConfigurationBuilder {
 		}
 
 		if (!StringUtils.hasText(sessionFixationAttribute)) {
-			Method changeSessionIdMethod = ReflectionUtils.findMethod(
-					HttpServletRequest.class, "changeSessionId");
-			sessionFixationAttribute = changeSessionIdMethod == null ? OPT_SESSION_FIXATION_MIGRATE_SESSION
-					: OPT_CHANGE_SESSION_ID;
+			sessionFixationAttribute =  OPT_CHANGE_SESSION_ID;
 		}
 		else if (StringUtils.hasText(sessionAuthStratRef)) {
 			pc.getReaderContext().error(
@@ -370,7 +370,7 @@ class HttpConfigurationBuilder {
 		boolean sessionFixationProtectionRequired = !sessionFixationAttribute
 				.equals(OPT_SESSION_FIXATION_NO_PROTECTION);
 
-		ManagedList<BeanMetadataElement> delegateSessionStrategies = new ManagedList<BeanMetadataElement>();
+		ManagedList<BeanMetadataElement> delegateSessionStrategies = new ManagedList<>();
 		BeanDefinitionBuilder concurrentSessionStrategy;
 		BeanDefinitionBuilder sessionFixationStrategy = null;
 		BeanDefinitionBuilder registerSessionStrategy;
@@ -448,8 +448,8 @@ class HttpConfigurationBuilder {
 
 			if (sessionFixationProtectionRequired) {
 				sessionFixationStrategy.addPropertyValue("migrateSessionAttributes",
-						Boolean.valueOf(sessionFixationAttribute
-								.equals(OPT_SESSION_FIXATION_MIGRATE_SESSION)));
+						sessionFixationAttribute
+								.equals(OPT_SESSION_FIXATION_MIGRATE_SESSION));
 			}
 		}
 
@@ -601,7 +601,7 @@ class HttpConfigurationBuilder {
 				metadataSourceBldr.getBeanDefinition());
 		RootBeanDefinition channelDecisionManager = new RootBeanDefinition(
 				ChannelDecisionManagerImpl.class);
-		ManagedList<RootBeanDefinition> channelProcessors = new ManagedList<RootBeanDefinition>(
+		ManagedList<RootBeanDefinition> channelProcessors = new ManagedList<>(
 				3);
 		RootBeanDefinition secureChannelProcessor = new RootBeanDefinition(
 				SecureChannelProcessor.class);
@@ -639,7 +639,7 @@ class HttpConfigurationBuilder {
 	 */
 	private ManagedMap<BeanMetadataElement, BeanDefinition> parseInterceptUrlsForChannelSecurity() {
 
-		ManagedMap<BeanMetadataElement, BeanDefinition> channelRequestMap = new ManagedMap<BeanMetadataElement, BeanDefinition>();
+		ManagedMap<BeanMetadataElement, BeanDefinition> channelRequestMap = new ManagedMap<>();
 
 		for (Element urlElt : interceptUrls) {
 			String path = urlElt.getAttribute(ATT_PATH_PATTERN);
@@ -719,7 +719,7 @@ class HttpConfigurationBuilder {
 				.createSecurityMetadataSource(interceptUrls, addAllAuth, httpElt, pc);
 
 		RootBeanDefinition accessDecisionMgr;
-		ManagedList<BeanDefinition> voters = new ManagedList<BeanDefinition>(2);
+		ManagedList<BeanDefinition> voters = new ManagedList<>(2);
 
 		if (useExpressions) {
 			BeanDefinitionBuilder expressionVoter = BeanDefinitionBuilder
@@ -820,7 +820,7 @@ class HttpConfigurationBuilder {
 	}
 
 	List<OrderDecorator> getFilters() {
-		List<OrderDecorator> filters = new ArrayList<OrderDecorator>();
+		List<OrderDecorator> filters = new ArrayList<>();
 
 		if (cpf != null) {
 			filters.add(new OrderDecorator(cpf, CHANNEL_FILTER));

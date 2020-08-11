@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@ package org.springframework.security.test.web.servlet.response;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.function.Consumer;
 
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
@@ -88,14 +89,19 @@ public final class SecurityMockMvcResultMatchers {
 		private Object expectedAuthenticationPrincipal;
 		private String expectedAuthenticationName;
 		private Collection<? extends GrantedAuthority> expectedGrantedAuthorities;
+		private Consumer<Authentication> assertAuthentication;
 
 		@Override
-		public void match(MvcResult result) throws Exception {
+		public void match(MvcResult result) {
 			SecurityContext context = load(result);
 
 			Authentication auth = context.getAuthentication();
 
 			assertTrue("Authentication should not be null", auth != null);
+
+			if (this.assertAuthentication != null) {
+				this.assertAuthentication.accept(auth);
+			}
 
 			if (this.expectedContext != null) {
 				assertEquals(this.expectedContext + " does not equal " + context,
@@ -138,6 +144,16 @@ public final class SecurityMockMvcResultMatchers {
 						+ " does not contain the same authorities as " + authorities,
 						this.expectedGrantedAuthorities.containsAll(authorities));
 			}
+		}
+
+		/**
+		 * Allows for any validating the authentication with arbitrary assertions
+		 * @param assesrtAuthentication the Consumer which validates the authentication
+		 * @return the AuthenticatedMatcher to perform additional assertions
+		 */
+		public AuthenticatedMatcher withAuthentication(Consumer<Authentication> assesrtAuthentication) {
+			this.assertAuthentication = assesrtAuthentication;
+			return this;
 		}
 
 		/**
@@ -213,7 +229,7 @@ public final class SecurityMockMvcResultMatchers {
 		 * @return the {@link AuthenticatedMatcher} for further customization
 		 */
 		public AuthenticatedMatcher withRoles(String... roles) {
-			Collection<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
+			Collection<GrantedAuthority> authorities = new ArrayList<>();
 			for (String role : roles) {
 				authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
 			}
@@ -236,7 +252,7 @@ public final class SecurityMockMvcResultMatchers {
 		private AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
 		@Override
-		public void match(MvcResult result) throws Exception {
+		public void match(MvcResult result) {
 			SecurityContext context = load(result);
 
 			Authentication authentication = context.getAuthentication();

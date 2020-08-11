@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -55,7 +55,6 @@ public abstract class Elements {
 	public static final String FILTER_CHAIN = "filter-chain";
 	public static final String GLOBAL_METHOD_SECURITY = "global-method-security";
 	public static final String PASSWORD_ENCODER = "password-encoder";
-	public static final String SALT_SOURCE = "salt-source";
 	public static final String PORT_MAPPINGS = "port-mappings";
 	public static final String PORT_MAPPING = "port-mapping";
 	public static final String CUSTOM_FILTER = "custom-filter";
@@ -71,6 +70,14 @@ public abstract class Elements {
 	public static final String CORS = "cors";
 	public static final String CSRF = "csrf";
 
+	public static final String OAUTH2_RESOURCE_SERVER = "oauth2-resource-server";
+	public static final String JWT = "jwt";
+	public static final String OPAQUE_TOKEN = "opaque-token";
+
 	public static final String WEBSOCKET_MESSAGE_BROKER = "websocket-message-broker";
 	public static final String INTERCEPT_MESSAGE = "intercept-message";
+
+	public static final String OAUTH2_LOGIN = "oauth2-login";
+	public static final String OAUTH2_CLIENT = "oauth2-client";
+	public static final String CLIENT_REGISTRATIONS = "client-registrations";
 }
